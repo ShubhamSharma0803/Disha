@@ -1,0 +1,1067 @@
+{
+    "assumptions": {
+        "wifi_range_m": 300,
+        "lora_range_m": 1000,
+        "area_m": [
+            2000,
+            2000
+        ],
+        "restricted_zones": [
+            {
+                "lat": 28.6139,
+                "lon": 77.209,
+                "radius_m": 250
+            },
+            {
+                "lat": 28.6184,
+                "lon": 77.2152,
+                "radius_m": 200
+            }
+        ]
+    },
+    "nodes": [
+        {
+            "id": "NODE-01",
+            "lat": 28.605591,
+            "lon": 77.206743,
+            "status": "PLANNED",
+            "hops_from_gateway": 1,
+            "deploy_order": 1
+        },
+        {
+            "id": "NODE-02",
+            "lat": 28.605591,
+            "lon": 77.21206,
+            "status": "PLANNED",
+            "hops_from_gateway": 1,
+            "deploy_order": 2
+        },
+        {
+            "id": "NODE-03",
+            "lat": 28.609633,
+            "lon": 77.209401,
+            "status": "PLANNED",
+            "hops_from_gateway": 1,
+            "deploy_order": 3
+        },
+        {
+            "id": "NODE-04",
+            "lat": 28.609633,
+            "lon": 77.204084,
+            "status": "PLANNED",
+            "hops_from_gateway": 1,
+            "deploy_order": 4
+        },
+        {
+            "id": "NODE-05",
+            "lat": 28.605591,
+            "lon": 77.201426,
+            "status": "PLANNED",
+            "hops_from_gateway": 1,
+            "deploy_order": 5
+        },
+        {
+            "id": "NODE-06",
+            "lat": 28.609633,
+            "lon": 77.214719,
+            "status": "PLANNED",
+            "hops_from_gateway": 1,
+            "deploy_order": 6
+        },
+        {
+            "id": "NODE-07",
+            "lat": 28.611654,
+            "lon": 77.206442,
+            "status": "PLANNED",
+            "hops_from_gateway": 1,
+            "deploy_order": 7
+        },
+        {
+            "id": "NODE-08",
+            "lat": 28.605591,
+            "lon": 77.217377,
+            "status": "PLANNED",
+            "hops_from_gateway": 1,
+            "deploy_order": 8
+        },
+        {
+            "id": "NODE-09",
+            "lat": 28.613675,
+            "lon": 77.21206,
+            "status": "PLANNED",
+            "hops_from_gateway": 2,
+            "deploy_order": 9
+        },
+        {
+            "id": "NODE-10",
+            "lat": 28.614349,
+            "lon": 77.206442,
+            "status": "PLANNED",
+            "hops_from_gateway": 2,
+            "deploy_order": 10
+        },
+        {
+            "id": "NODE-11",
+            "lat": 28.609633,
+            "lon": 77.198767,
+            "status": "PLANNED",
+            "hops_from_gateway": 2,
+            "deploy_order": 11
+        },
+        {
+            "id": "NODE-12",
+            "lat": 28.609633,
+            "lon": 77.220036,
+            "status": "PLANNED",
+            "hops_from_gateway": 2,
+            "deploy_order": 12
+        },
+        {
+            "id": "NODE-13",
+            "lat": 28.613675,
+            "lon": 77.201426,
+            "status": "PLANNED",
+            "hops_from_gateway": 2,
+            "deploy_order": 13
+        },
+        {
+            "id": "NODE-14",
+            "lat": 28.613675,
+            "lon": 77.217377,
+            "status": "PLANNED",
+            "hops_from_gateway": 2,
+            "deploy_order": 14
+        },
+        {
+            "id": "NODE-15",
+            "lat": 28.616595,
+            "lon": 77.214628,
+            "status": "PLANNED",
+            "hops_from_gateway": 2,
+            "deploy_order": 15
+        },
+        {
+            "id": "NODE-16",
+            "lat": 28.617718,
+            "lon": 77.209401,
+            "status": "PLANNED",
+            "hops_from_gateway": 2,
+            "deploy_order": 16
+        },
+        {
+            "id": "NODE-17",
+            "lat": 28.616595,
+            "lon": 77.21514,
+            "status": "PLANNED",
+            "hops_from_gateway": 2,
+            "deploy_order": 17
+        },
+        {
+            "id": "NODE-18",
+            "lat": 28.617718,
+            "lon": 77.204084,
+            "status": "PLANNED",
+            "hops_from_gateway": 2,
+            "deploy_order": 18
+        },
+        {
+            "id": "NODE-19",
+            "lat": 28.617718,
+            "lon": 77.198767,
+            "status": "PLANNED",
+            "hops_from_gateway": 3,
+            "deploy_order": 19
+        },
+        {
+            "id": "NODE-20",
+            "lat": 28.620188,
+            "lon": 77.214628,
+            "status": "PLANNED",
+            "hops_from_gateway": 3,
+            "deploy_order": 20
+        },
+        {
+            "id": "NODE-21",
+            "lat": 28.617718,
+            "lon": 77.220036,
+            "status": "PLANNED",
+            "hops_from_gateway": 3,
+            "deploy_order": 21
+        },
+        {
+            "id": "NODE-22",
+            "lat": 28.62176,
+            "lon": 77.206743,
+            "status": "PLANNED",
+            "hops_from_gateway": 3,
+            "deploy_order": 22
+        },
+        {
+            "id": "NODE-23",
+            "lat": 28.62176,
+            "lon": 77.21206,
+            "status": "PLANNED",
+            "hops_from_gateway": 3,
+            "deploy_order": 23
+        },
+        {
+            "id": "NODE-24",
+            "lat": 28.62176,
+            "lon": 77.201426,
+            "status": "PLANNED",
+            "hops_from_gateway": 3,
+            "deploy_order": 24
+        },
+        {
+            "id": "NODE-25",
+            "lat": 28.62176,
+            "lon": 77.217377,
+            "status": "PLANNED",
+            "hops_from_gateway": 3,
+            "deploy_order": 25
+        }
+    ],
+    "gateway": {
+        "id": "GATEWAY",
+        "lat": 28.604917,
+        "lon": 77.209
+    },
+    "links": [
+        {
+            "from": "GATEWAY",
+            "to": "NODE-01",
+            "distance_m": 233
+        },
+        {
+            "from": "GATEWAY",
+            "to": "NODE-02",
+            "distance_m": 308
+        },
+        {
+            "from": "GATEWAY",
+            "to": "NODE-03",
+            "distance_m": 526
+        },
+        {
+            "from": "GATEWAY",
+            "to": "NODE-04",
+            "distance_m": 712
+        },
+        {
+            "from": "GATEWAY",
+            "to": "NODE-05",
+            "distance_m": 744
+        },
+        {
+            "from": "GATEWAY",
+            "to": "NODE-06",
+            "distance_m": 767
+        },
+        {
+            "from": "GATEWAY",
+            "to": "NODE-07",
+            "distance_m": 791
+        },
+        {
+            "from": "GATEWAY",
+            "to": "NODE-08",
+            "distance_m": 822
+        },
+        {
+            "from": "NODE-01",
+            "to": "NODE-02",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-01",
+            "to": "NODE-03",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-01",
+            "to": "NODE-04",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-01",
+            "to": "NODE-05",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-01",
+            "to": "NODE-06",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-01",
+            "to": "NODE-07",
+            "distance_m": 676
+        },
+        {
+            "from": "NODE-01",
+            "to": "NODE-10",
+            "distance_m": 975
+        },
+        {
+            "from": "NODE-01",
+            "to": "NODE-11",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-02",
+            "to": "NODE-03",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-02",
+            "to": "NODE-04",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-02",
+            "to": "NODE-06",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-02",
+            "to": "NODE-07",
+            "distance_m": 870
+        },
+        {
+            "from": "NODE-02",
+            "to": "NODE-08",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-02",
+            "to": "NODE-09",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-02",
+            "to": "NODE-12",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-04",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-05",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-06",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-07",
+            "distance_m": 366
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-08",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-09",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-10",
+            "distance_m": 599
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-13",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-14",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-15",
+            "distance_m": 928
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-16",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-03",
+            "to": "NODE-17",
+            "distance_m": 957
+        },
+        {
+            "from": "NODE-04",
+            "to": "NODE-05",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-04",
+            "to": "NODE-07",
+            "distance_m": 322
+        },
+        {
+            "from": "NODE-04",
+            "to": "NODE-09",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-04",
+            "to": "NODE-10",
+            "distance_m": 573
+        },
+        {
+            "from": "NODE-04",
+            "to": "NODE-11",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-04",
+            "to": "NODE-13",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-04",
+            "to": "NODE-18",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-05",
+            "to": "NODE-07",
+            "distance_m": 834
+        },
+        {
+            "from": "NODE-05",
+            "to": "NODE-11",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-05",
+            "to": "NODE-13",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-06",
+            "to": "NODE-07",
+            "distance_m": 840
+        },
+        {
+            "from": "NODE-06",
+            "to": "NODE-08",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-06",
+            "to": "NODE-09",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-06",
+            "to": "NODE-10",
+            "distance_m": 964
+        },
+        {
+            "from": "NODE-06",
+            "to": "NODE-12",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-06",
+            "to": "NODE-14",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-06",
+            "to": "NODE-15",
+            "distance_m": 775
+        },
+        {
+            "from": "NODE-06",
+            "to": "NODE-17",
+            "distance_m": 776
+        },
+        {
+            "from": "NODE-07",
+            "to": "NODE-09",
+            "distance_m": 593
+        },
+        {
+            "from": "NODE-07",
+            "to": "NODE-10",
+            "distance_m": 300
+        },
+        {
+            "from": "NODE-07",
+            "to": "NODE-11",
+            "distance_m": 783
+        },
+        {
+            "from": "NODE-07",
+            "to": "NODE-13",
+            "distance_m": 539
+        },
+        {
+            "from": "NODE-07",
+            "to": "NODE-15",
+            "distance_m": 971
+        },
+        {
+            "from": "NODE-07",
+            "to": "NODE-16",
+            "distance_m": 734
+        },
+        {
+            "from": "NODE-07",
+            "to": "NODE-18",
+            "distance_m": 713
+        },
+        {
+            "from": "NODE-08",
+            "to": "NODE-12",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-08",
+            "to": "NODE-14",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-09",
+            "to": "NODE-10",
+            "distance_m": 554
+        },
+        {
+            "from": "NODE-09",
+            "to": "NODE-12",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-09",
+            "to": "NODE-14",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-09",
+            "to": "NODE-15",
+            "distance_m": 411
+        },
+        {
+            "from": "NODE-09",
+            "to": "NODE-16",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-09",
+            "to": "NODE-17",
+            "distance_m": 443
+        },
+        {
+            "from": "NODE-09",
+            "to": "NODE-18",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-09",
+            "to": "NODE-20",
+            "distance_m": 767
+        },
+        {
+            "from": "NODE-09",
+            "to": "NODE-21",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-09",
+            "to": "NODE-23",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-10",
+            "to": "NODE-11",
+            "distance_m": 915
+        },
+        {
+            "from": "NODE-10",
+            "to": "NODE-13",
+            "distance_m": 496
+        },
+        {
+            "from": "NODE-10",
+            "to": "NODE-15",
+            "distance_m": 838
+        },
+        {
+            "from": "NODE-10",
+            "to": "NODE-16",
+            "distance_m": 474
+        },
+        {
+            "from": "NODE-10",
+            "to": "NODE-17",
+            "distance_m": 886
+        },
+        {
+            "from": "NODE-10",
+            "to": "NODE-18",
+            "distance_m": 440
+        },
+        {
+            "from": "NODE-10",
+            "to": "NODE-19",
+            "distance_m": 839
+        },
+        {
+            "from": "NODE-10",
+            "to": "NODE-22",
+            "distance_m": 826
+        },
+        {
+            "from": "NODE-10",
+            "to": "NODE-23",
+            "distance_m": 991
+        },
+        {
+            "from": "NODE-10",
+            "to": "NODE-24",
+            "distance_m": 960
+        },
+        {
+            "from": "NODE-11",
+            "to": "NODE-13",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-11",
+            "to": "NODE-19",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-12",
+            "to": "NODE-14",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-12",
+            "to": "NODE-15",
+            "distance_m": 938
+        },
+        {
+            "from": "NODE-12",
+            "to": "NODE-17",
+            "distance_m": 911
+        },
+        {
+            "from": "NODE-12",
+            "to": "NODE-21",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-13",
+            "to": "NODE-16",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-13",
+            "to": "NODE-18",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-13",
+            "to": "NODE-19",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-13",
+            "to": "NODE-24",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-14",
+            "to": "NODE-15",
+            "distance_m": 422
+        },
+        {
+            "from": "NODE-14",
+            "to": "NODE-16",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-14",
+            "to": "NODE-17",
+            "distance_m": 392
+        },
+        {
+            "from": "NODE-14",
+            "to": "NODE-20",
+            "distance_m": 773
+        },
+        {
+            "from": "NODE-14",
+            "to": "NODE-21",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-14",
+            "to": "NODE-25",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-15",
+            "to": "NODE-16",
+            "distance_m": 526
+        },
+        {
+            "from": "NODE-15",
+            "to": "NODE-17",
+            "distance_m": 50
+        },
+        {
+            "from": "NODE-15",
+            "to": "NODE-20",
+            "distance_m": 400
+        },
+        {
+            "from": "NODE-15",
+            "to": "NODE-21",
+            "distance_m": 543
+        },
+        {
+            "from": "NODE-15",
+            "to": "NODE-22",
+            "distance_m": 961
+        },
+        {
+            "from": "NODE-15",
+            "to": "NODE-23",
+            "distance_m": 627
+        },
+        {
+            "from": "NODE-15",
+            "to": "NODE-25",
+            "distance_m": 635
+        },
+        {
+            "from": "NODE-16",
+            "to": "NODE-17",
+            "distance_m": 575
+        },
+        {
+            "from": "NODE-16",
+            "to": "NODE-18",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-16",
+            "to": "NODE-20",
+            "distance_m": 580
+        },
+        {
+            "from": "NODE-16",
+            "to": "NODE-22",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-16",
+            "to": "NODE-23",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-16",
+            "to": "NODE-24",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-16",
+            "to": "NODE-25",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-17",
+            "to": "NODE-20",
+            "distance_m": 403
+        },
+        {
+            "from": "NODE-17",
+            "to": "NODE-21",
+            "distance_m": 495
+        },
+        {
+            "from": "NODE-17",
+            "to": "NODE-23",
+            "distance_m": 649
+        },
+        {
+            "from": "NODE-17",
+            "to": "NODE-25",
+            "distance_m": 615
+        },
+        {
+            "from": "NODE-18",
+            "to": "NODE-19",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-18",
+            "to": "NODE-22",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-18",
+            "to": "NODE-23",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-18",
+            "to": "NODE-24",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-19",
+            "to": "NODE-22",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-19",
+            "to": "NODE-24",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-20",
+            "to": "NODE-21",
+            "distance_m": 596
+        },
+        {
+            "from": "NODE-20",
+            "to": "NODE-22",
+            "distance_m": 790
+        },
+        {
+            "from": "NODE-20",
+            "to": "NODE-23",
+            "distance_m": 306
+        },
+        {
+            "from": "NODE-20",
+            "to": "NODE-25",
+            "distance_m": 321
+        },
+        {
+            "from": "NODE-21",
+            "to": "NODE-23",
+            "distance_m": 900
+        },
+        {
+            "from": "NODE-21",
+            "to": "NODE-25",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-22",
+            "to": "NODE-23",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-22",
+            "to": "NODE-24",
+            "distance_m": 520
+        },
+        {
+            "from": "NODE-23",
+            "to": "NODE-25",
+            "distance_m": 520
+        }
+    ],
+    "deployment_order": [
+        "NODE-01",
+        "NODE-02",
+        "NODE-03",
+        "NODE-04",
+        "NODE-05",
+        "NODE-06",
+        "NODE-07",
+        "NODE-08",
+        "NODE-09",
+        "NODE-10",
+        "NODE-11",
+        "NODE-12",
+        "NODE-13",
+        "NODE-14",
+        "NODE-15",
+        "NODE-16",
+        "NODE-17",
+        "NODE-18",
+        "NODE-19",
+        "NODE-20",
+        "NODE-21",
+        "NODE-22",
+        "NODE-23",
+        "NODE-24",
+        "NODE-25"
+    ],
+    "drone_targets": [
+        {
+            "order": 1,
+            "node_id": "NODE-01",
+            "lat": 28.605591,
+            "lon": 77.206743
+        },
+        {
+            "order": 2,
+            "node_id": "NODE-02",
+            "lat": 28.605591,
+            "lon": 77.21206
+        },
+        {
+            "order": 3,
+            "node_id": "NODE-03",
+            "lat": 28.609633,
+            "lon": 77.209401
+        },
+        {
+            "order": 4,
+            "node_id": "NODE-04",
+            "lat": 28.609633,
+            "lon": 77.204084
+        },
+        {
+            "order": 5,
+            "node_id": "NODE-05",
+            "lat": 28.605591,
+            "lon": 77.201426
+        },
+        {
+            "order": 6,
+            "node_id": "NODE-06",
+            "lat": 28.609633,
+            "lon": 77.214719
+        },
+        {
+            "order": 7,
+            "node_id": "NODE-07",
+            "lat": 28.611654,
+            "lon": 77.206442
+        },
+        {
+            "order": 8,
+            "node_id": "NODE-08",
+            "lat": 28.605591,
+            "lon": 77.217377
+        },
+        {
+            "order": 9,
+            "node_id": "NODE-09",
+            "lat": 28.613675,
+            "lon": 77.21206
+        },
+        {
+            "order": 10,
+            "node_id": "NODE-10",
+            "lat": 28.614349,
+            "lon": 77.206442
+        },
+        {
+            "order": 11,
+            "node_id": "NODE-11",
+            "lat": 28.609633,
+            "lon": 77.198767
+        },
+        {
+            "order": 12,
+            "node_id": "NODE-12",
+            "lat": 28.609633,
+            "lon": 77.220036
+        },
+        {
+            "order": 13,
+            "node_id": "NODE-13",
+            "lat": 28.613675,
+            "lon": 77.201426
+        },
+        {
+            "order": 14,
+            "node_id": "NODE-14",
+            "lat": 28.613675,
+            "lon": 77.217377
+        },
+        {
+            "order": 15,
+            "node_id": "NODE-15",
+            "lat": 28.616595,
+            "lon": 77.214628
+        },
+        {
+            "order": 16,
+            "node_id": "NODE-16",
+            "lat": 28.617718,
+            "lon": 77.209401
+        },
+        {
+            "order": 17,
+            "node_id": "NODE-17",
+            "lat": 28.616595,
+            "lon": 77.21514
+        },
+        {
+            "order": 18,
+            "node_id": "NODE-18",
+            "lat": 28.617718,
+            "lon": 77.204084
+        },
+        {
+            "order": 19,
+            "node_id": "NODE-19",
+            "lat": 28.617718,
+            "lon": 77.198767
+        },
+        {
+            "order": 20,
+            "node_id": "NODE-20",
+            "lat": 28.620188,
+            "lon": 77.214628
+        },
+        {
+            "order": 21,
+            "node_id": "NODE-21",
+            "lat": 28.617718,
+            "lon": 77.220036
+        },
+        {
+            "order": 22,
+            "node_id": "NODE-22",
+            "lat": 28.62176,
+            "lon": 77.206743
+        },
+        {
+            "order": 23,
+            "node_id": "NODE-23",
+            "lat": 28.62176,
+            "lon": 77.21206
+        },
+        {
+            "order": 24,
+            "node_id": "NODE-24",
+            "lat": 28.62176,
+            "lon": 77.201426
+        },
+        {
+            "order": 25,
+            "node_id": "NODE-25",
+            "lat": 28.62176,
+            "lon": 77.217377
+        }
+    ],
+    "wifi_coverage": 1.0,
+    "valid": true
+}

@@ -1,6 +1,44 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
 .venv/
-node_modules/
+env/
+.env/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment Variables & Local Configs
 .env
+.env.local
+.env.*.local
+
+# Node / Frontend Build & Dependencies
+node_modules/
+dist/
+build/
+*.log
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Generated Planner / Simulation Artifacts (Keep sample docs)
+/deployment.json
+backend/deployment/deployment.json
 *.png
+!docs/*.png

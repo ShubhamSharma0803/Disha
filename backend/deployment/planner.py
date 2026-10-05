@@ -22,6 +22,13 @@ def local_to_latlon(x, y, p: PlannerInput):
     return lat, lon
 
 
+def latlon_to_local(lat, lon, p: PlannerInput):
+    """lat/lon -> local meters (origin = area center). Inverse of local_to_latlon."""
+    y = (lat - p.center_lat) * M_PER_DEG_LAT
+    x = (lon - p.center_lon) * M_PER_DEG_LAT * math.cos(math.radians(p.center_lat))
+    return x, y
+
+
 def place_nodes(p: PlannerInput):
     """Square grid. A circle of radius r fully covers a square of side r*sqrt(2),
     so cells of that size (shrunk slightly to fit the area evenly) are covered."""

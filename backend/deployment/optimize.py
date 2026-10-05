@@ -1,7 +1,10 @@
 """Step 4: reduce node count. Hexagonal lattice search + pruning (+ greedy connected set cover kept for comparison)."""
 import math
 import numpy as np
-from planner import PlannerInput, place_nodes, coverage_ratio, build_links, reachable_from_gateway
+try:
+    from backend.deployment.planner import PlannerInput, place_nodes, coverage_ratio, build_links, reachable_from_gateway
+except ImportError:
+    from planner import PlannerInput, place_nodes, coverage_ratio, build_links, reachable_from_gateway
 
 
 def grid(width, height, step):
@@ -56,11 +59,44 @@ def prune(nodes, pts, gw, p):
     return nodes
 
 
-def optimize(p: PlannerInput, gateway_xy, plan_step=25, offsets=6):
+def blocked(n, zones):
+    """zones: list of (x, y, radius_m) where NO node may be placed."""
+    return any(math.hypot(n[0] - zx, n[1] - zy) <= zr for zx, zy, zr in zones)
+
+
+def repair(nodes, pts, cands, covers, r):
+    """Greedy: add allowed candidates until every point is covered again."""
+    uncovered = np.ones(len(pts), dtype=bool)
+    if nodes:
+        arr = np.array(nodes)
+        uncovered = ~(np.hypot(arr[:, None, 0] - pts[None, :, 0],
+                               arr[:, None, 1] - pts[None, :, 1]) <= r).any(axis=0)
+    nodes = list(nodes)
+    while uncovered.any():
+        gain = (covers & uncovered).sum(axis=1)
+        b = gain.argmax()
+        if gain[b] == 0:
+            break
+        nodes.append(tuple(cands[b]))
+        uncovered &= ~covers[b]
+    return nodes
+
+
+def optimize(p: PlannerInput, gateway_xy, restricted=None, plan_step=25, offsets=6):
+    """restricted: list of (x, y, radius_m) in local meters. Nodes are never placed inside them,
+    but the area inside them must still be covered by Wi-Fi."""
+    restricted = restricted or []
     pts = grid(p.width_m, p.height_m, plan_step)
     gw = np.array(gateway_xy, dtype=float)
     r = p.wifi_range_m
     best = None
+
+    cands = covers = None
+    if restricted:
+        allc = grid(p.width_m + r, p.height_m + r, 50)
+        cands = np.array([c for c in allc if not blocked(c, restricted)])
+        covers = np.hypot(cands[:, None, 0] - pts[None, :, 0],
+                          cands[:, None, 1] - pts[None, :, 1]) <= r
     for scale in (1.0, 0.95, 0.9, 0.85, 0.8):         # shrink lattice if LoRa links too long
         for rotated in (False, True):
             for i in range(offsets):
@@ -69,6 +105,8 @@ def optimize(p: PlannerInput, gateway_xy, plan_step=25, offsets=6):
                     oy = j * 1.5 * r / offsets
                     lat = hex_lattice(p, scale, ox, oy, rotated)
                     lat = [n for n in lat if any(math.hypot(n[0]-q[0], n[1]-q[1]) <= r for q in pts[::7])]
+                    if restricted:
+                        lat = repair([n for n in lat if not blocked(n, restricted)], pts, cands, covers, r)
                     if best is not None and len(lat) > len(best) + 3:
                         continue                      # can't beat best after pruning (cheap skip)
                     if not covers_all(lat, pts, r):
