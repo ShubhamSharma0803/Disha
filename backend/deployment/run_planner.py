@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Rectangle
 
 try:
-    from backend.deployment.planner import PlannerInput, local_to_latlon, latlon_to_local, build_links, coverage_ratio
+    from backend.deployment.planner import PlannerInput, local_to_latlon, latlon_to_local, build_links, coverage_ratio, place_nodes
     from backend.deployment.optimize import optimize, connected
 except ImportError:
-    from planner import PlannerInput, local_to_latlon, latlon_to_local, build_links, coverage_ratio
+    from planner import PlannerInput, local_to_latlon, latlon_to_local, build_links, coverage_ratio, place_nodes
     from optimize import optimize, connected
 
 
@@ -36,7 +36,10 @@ def run(p: PlannerInput, gateway_xy, restricted_latlon=None,
     restricted_latlon = restricted_latlon or []
     zones = [(*latlon_to_local(z["lat"], z["lon"], p), z["radius_m"]) for z in restricted_latlon]
 
-    nodes_xy = [tuple(float(v) for v in n) for n in optimize(p, gateway_xy, restricted=zones)]
+    opt_res = optimize(p, gateway_xy, restricted=zones)
+    if not opt_res:
+        opt_res = place_nodes(p)
+    nodes_xy = [tuple(float(v) for v in n) for n in opt_res]
     # temporary ids to compute hops, then final ids follow the deployment order
     tmp = {"GATEWAY": gateway_xy} | {f"T{i}": xy for i, xy in enumerate(nodes_xy)}
     hops = hops_from_gateway(tmp, build_links(tmp, p.lora_range_m))

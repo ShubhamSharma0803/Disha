@@ -42,16 +42,19 @@ def hex_lattice(p, scale, ox, oy, rotated):
             x += dx
         y += dy
         row += 1
-    # keep only nodes whose disk touches the area
+    # keep only nodes strictly inside the disaster area boundary
     return [n for n in nodes
-            if abs(n[0]) <= p.width_m / 2 + r and abs(n[1]) <= p.height_m / 2 + r]
+            if abs(n[0]) <= p.width_m / 2 + 1e-6 and abs(n[1]) <= p.height_m / 2 + 1e-6]
 
 
 def prune(nodes, pts, gw, p):
     nodes = list(nodes)
+    max_passes = 3 if len(nodes) > 40 else 10
+    passes = 0
     changed = True
-    while changed:
+    while changed and passes < max_passes:
         changed = False
+        passes += 1
         for n in list(nodes):
             trial = [m for m in nodes if m != n]
             if valid(trial, pts, gw, p):
@@ -82,18 +85,26 @@ def repair(nodes, pts, cands, covers, r):
     return nodes
 
 
-def optimize(p: PlannerInput, gateway_xy, restricted=None, plan_step=25, offsets=6):
+def optimize(p: PlannerInput, gateway_xy, restricted=None, plan_step=None, offsets=None):
     """restricted: list of (x, y, radius_m) in local meters. Nodes are never placed inside them,
     but the area inside them must still be covered by Wi-Fi."""
     restricted = restricted or []
+    r = p.wifi_range_m
+
+    # Adaptive plan_step and offsets to prevent CPU lockup when ranges are small or area is large
+    if plan_step is None:
+        plan_step = max(25.0, r / 4.0, max(p.width_m, p.height_m) / 60.0)
+    if offsets is None:
+        approx_nodes = (p.width_m * p.height_m) / max(1.0, math.pi * r * r)
+        offsets = 2 if approx_nodes > 60 else (4 if approx_nodes > 30 else 6)
+
     pts = grid(p.width_m, p.height_m, plan_step)
     gw = np.array(gateway_xy, dtype=float)
-    r = p.wifi_range_m
     best = None
 
     cands = covers = None
     if restricted:
-        allc = grid(p.width_m + r, p.height_m + r, 50)
+        allc = grid(p.width_m + r, p.height_m + r, max(50.0, plan_step))
         cands = np.array([c for c in allc if not blocked(c, restricted)])
         covers = np.hypot(cands[:, None, 0] - pts[None, :, 0],
                           cands[:, None, 1] - pts[None, :, 1]) <= r

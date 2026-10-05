@@ -1,0 +1,137 @@
+/* ─── App Layout ─────────────────────────────────────────────────────────── */
+/* Full-viewport, sidebar-left + map-right layout                            */
+
+.app {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #0a0f1e;
+}
+
+.app__map {
+  flex: 1 1 0;
+  position: relative;
+  min-width: 0;
+}
+
+/* ── Floating Map Toolbar ────────────────────────────────────────────────── */
+
+.map-toolbar {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+.map-toolbar__btn {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: 'Inter', system-ui, sans-serif;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-toolbar__btn:hover {
+  background: rgba(51, 65, 85, 0.9);
+  color: #ffffff;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.map-toolbar__btn--active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(139, 92, 246, 0.4));
+  border-color: #6366f1;
+  color: #e0e7ff;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+/* ── Map Legend Overlay ──────────────────────────────────────────────────── */
+
+.map-legend {
+  position: absolute;
+  bottom: 24px;
+  left: 18px;
+  z-index: 10;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.map-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.map-legend__box {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1.5px solid #06b6d4;
+  display: inline-block;
+}
+
+.map-legend__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.map-legend__ring {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px dashed #38bdf8;
+  display: inline-block;
+}
+
+.map-legend__line {
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  display: inline-block;
+}
+
+/* ── Mapbox Popups ───────────────────────────────────────────────────────── */
+
+.mapboxgl-popup-content {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: #0f172af2 !important;
+}
