@@ -20,6 +20,7 @@ except ImportError:
     from deployment.run_planner import run
 
 from backend.simulation.api import router as simulation_router
+from backend.gateway.bridge_api import router as bridge_router
 
 app = FastAPI(
     title="Disha - Emergency Communication & Rescue Network API",
@@ -43,6 +44,7 @@ app.add_middleware(
 )
 
 app.include_router(simulation_router)
+app.include_router(bridge_router)
 
 
 class RestrictedZone(BaseModel):

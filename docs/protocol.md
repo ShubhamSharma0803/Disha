@@ -143,4 +143,69 @@ Planner  --deployment.json-->  Drone module, Mesh engine, Dashboard
 Mesh engine  --network events-->  FastAPI  --WebSocket-->  Dashboard
 Drone module  --drone status / events-->  FastAPI
 Search module  --SEARCH_OBSERVATION-->  FastAPI
+ESP32 serial  --serial_bridge.py-->  POST /bridge/ingest  -->  events bus  -->  WebSocket  -->  Dashboard
 ```
+
+## 8. ESP32 serial wire format (FROZEN)
+
+**Change this section before changing firmware or `serial_parser.py`.**
+
+Each line sent by the ESP32 is **one JSON object**, UTF-8, terminated by `\n`.  
+Baud rate: **115200**. The bridge silently discards any line that is not valid JSON or lacks a `"t"` field (boot logs, debug text, etc.).
+
+### 8.1 SOS packet
+
+```json
+{"t":"SOS","node":"HW-01","cat":"TRP","n":3,"lat":30.3256,"lon":77.9423,"bat":82}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `t` | string | ✓ | Always `"SOS"` |
+| `node` | string | ✓ | Hardware node ID (e.g. `"HW-01"`) |
+| `cat` | string | ✓ | Emergency category: `MED`, `TRP`, `MIS`, `FWD`, `SHL`, `SAF` |
+| `n` | int | ✓ | Number of people (1–9) |
+| `lat` | float | ✓ | WGS84 latitude |
+| `lon` | float | ✓ | WGS84 longitude |
+| `bat` | int | — | Battery percentage 0–100 |
+
+The bridge maps `cat` → `code` and sets `source_kind = "hardware"`.
+
+### 8.2 Wi-Fi sniff observation
+
+```json
+{"t":"SNF","node":"HW-01","dev":"a3f9c1","rssi":-71,"ch":6}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `t` | string | ✓ | Always `"SNF"` |
+| `node` | string | ✓ | Hardware node ID |
+| `dev` | string | ✓ | Truncated device identifier (never raw MAC) |
+| `rssi` | int | ✓ | Signal strength in dBm |
+| `ch` | int | — | Wi-Fi channel (1–13) |
+
+The bridge emits a `SEARCH_OBSERVATION` event with `source_kind = "hardware"`.
+
+### 8.3 Heartbeat (optional)
+
+```json
+{"t":"HB","node":"HW-01","bat":82}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `t` | string | ✓ | Always `"HB"` |
+| `node` | string | ✓ | Hardware node ID |
+| `bat` | int | — | Battery percentage 0–100 |
+
+Heartbeats update `GET /gateway/status` but do not create SOS entries or observations.
+
+### 8.4 Rules
+
+- **One JSON object per line**, newline-terminated. No multi-line JSON.
+- The bridge silently drops lines that are not valid JSON or have an unknown `"t"` value.
+- `cat` must be one of: `MED`, `TRP`, `MIS`, `FWD`, `SHL`, `SAF`. Unknown values are treated as `MIS`.
+- `n` is clamped to 1–9.
+- The bridge is a **separate process** (`backend/gateway/serial_bridge.py`). Switch mock ↔ real with `--mock` / `--port COM3`.
+- The backend never reads serial directly; it only receives `POST /bridge/ingest`.

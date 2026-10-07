@@ -12,7 +12,7 @@
 
 import { normalizeNodeId } from '../utils/nodeUtils.js';
 
-const MAX_STORED_EVENTS = 300;
+const MAX_STORED_EVENTS = 200;
 
 // Internal in-memory event array (newest first)
 let eventsList = [];

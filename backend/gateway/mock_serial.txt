@@ -1,0 +1,95 @@
+# ── mock_serial.txt ──────────────────────────────────────────────────────────
+# Simulated ESP32 serial output for testing the bridge without hardware.
+# Processed by serial_bridge.py:
+#   Lines starting with '#' are comments (skipped).
+#   Blank lines are skipped.
+#   "# wait N" sleeps N * delay seconds before the next data line.
+#   All other lines are passed to serial_parser.parse_line(); invalid JSON
+#   and unknown packet types are silently dropped (packets_ignored++).
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Boot noise the parser MUST silently drop ──────────────────────────────────
+ets Jun  8 2016 00:22:57
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+I (xxx) boot: ESP-IDF v5.1.2 second-stage bootloader
+I (xxx) boot: compile time 12:34:56
+Configuring partitions, nvs: 0x9000...
+WiFi connecting… SSID: DISHA_MESH
+[DEBUG] heap_free=212080 tx_depth=0
+
+# ── Heartbeat from HW-01 (first thing after boot) ─────────────────────────────
+{"t":"HB","node":"HW-01","bat":91}
+
+# wait 1
+
+# ── SOS: trapped, 3 people, from HW-01 (unknown topology node – must not crash) ─
+{"t":"SOS","node":"HW-01","cat":"TRP","n":3,"lat":30.3256,"lon":77.9423,"bat":89}
+
+# wait 1
+
+# ── Malformed JSON – parser must drop silently ────────────────────────────────
+{"t":"SOS","node":"HW-01","cat":"TRP","n":2,"lat":30.32
+
+# ── Invalid category – parser falls back to MIS ──────────────────────────────
+{"t":"SOS","node":"HW-01","cat":"BADCAT","n":1,"lat":30.3260,"lon":77.9430,"bat":85}
+
+# wait 1
+
+# ── Wi-Fi sniff for ONE device hash (CAFE-01) across 3 nodes, varying RSSI ───
+# HW-01 picks it up strongly
+{"t":"SNF","node":"HW-01","dev":"cafe01cafe01","rssi":-58,"ch":6}
+
+# wait 1
+
+# MOCK-02 hears it at medium strength
+{"t":"SNF","node":"MOCK-02","dev":"cafe01cafe01","rssi":-72,"ch":6}
+
+# wait 1
+
+# MOCK-03 hears it weakly
+{"t":"SNF","node":"MOCK-03","dev":"cafe01cafe01","rssi":-85,"ch":6}
+
+# wait 1
+
+# HW-01 hears it again (signal fading)
+{"t":"SNF","node":"HW-01","dev":"cafe01cafe01","rssi":-64,"ch":6}
+
+# wait 1
+
+# MOCK-02 picks up the same device on a different channel
+{"t":"SNF","node":"MOCK-02","dev":"cafe01cafe01","rssi":-69,"ch":11}
+
+# wait 1
+
+# MOCK-03 barely hears it
+{"t":"SNF","node":"MOCK-03","dev":"cafe01cafe01","rssi":-88,"ch":1}
+
+# wait 1
+
+# HW-01 last sniff of this device
+{"t":"SNF","node":"HW-01","dev":"cafe01cafe01","rssi":-61,"ch":6}
+
+# wait 1
+
+# ── Heartbeats ───────────────────────────────────────────────────────────────
+{"t":"HB","node":"HW-01","bat":84}
+{"t":"HB","node":"MOCK-02","bat":77}
+{"t":"HB","node":"MOCK-03","bat":62}
+
+# wait 1
+
+# ── Debug garbage line that is NOT valid JSON ─────────────────────────────────
+[WIFI] rssi=-67 channel=6 ap=DISHA_MESH connected=1
+
+# ── Another SOS from a different node ────────────────────────────────────────
+{"t":"SOS","node":"MOCK-02","cat":"MED","n":1,"lat":30.3261,"lon":77.9431,"bat":75}
+
+# wait 1
+
+# ── Food/water SOS ───────────────────────────────────────────────────────────
+{"t":"SOS","node":"MOCK-03","cat":"FWD","n":5,"lat":30.3248,"lon":77.9415,"bat":60}
+
+# wait 1
+
+# ── Final heartbeat ───────────────────────────────────────────────────────────
+{"t":"HB","node":"HW-01","bat":81}

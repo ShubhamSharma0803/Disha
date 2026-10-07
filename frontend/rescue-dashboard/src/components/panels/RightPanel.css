@@ -13,7 +13,7 @@
   width: 0;
 }
 
-/* Collapse Toggle Tab: 16px from viewport edge when collapsed, vertically aligned at top: 16px */
+/* Collapse Toggle Tab */
 .disha-right-panel__toggle {
   position: absolute;
   top: 16px;
@@ -35,7 +35,6 @@
   outline: none;
 }
 
-/* When collapsed, position 16px from viewport edge (right: 0 inside 16px overlay margin) */
 .disha-right-panel.is-collapsed .disha-right-panel__toggle {
   left: auto;
   right: 0;
@@ -61,6 +60,16 @@
   position: relative;
 }
 
+/* ── Crucial Flexbox Fix: Ensure inner Card wrapper fills height and constrains children ── */
+.disha-right-panel__content .ui-card__content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
 /* Subtle scroll fade overlay at bottom */
 .disha-right-panel::after {
   content: '';
@@ -68,7 +77,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 36px;
+  height: 32px;
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 100%);
   border-bottom-left-radius: 32px;
   border-bottom-right-radius: 32px;
@@ -82,6 +91,7 @@
 
 .disha-right-panel__header {
   margin-bottom: var(--space-3);
+  flex-shrink: 0;
 }
 
 .disha-right-panel__title {
@@ -100,9 +110,10 @@
 }
 
 .disha-right-panel__tabs-wrapper {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
   display: flex;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .disha-right-panel__tabs-wrapper .disha-segmented-tabs {
@@ -112,18 +123,47 @@
 
 .disha-right-panel__tabs-wrapper .disha-tab-btn {
   flex: 1;
-  padding: 6px 8px;
+  padding: 6px 6px;
   font-size: 11px;
 }
 
+/* ── Scrollable Body with Clean Custom Scrollbar ── */
 .disha-right-panel__body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding-right: var(--space-1);
-  padding-bottom: 56px; /* 24px bottom padding + safe zone clearance */
+  overflow-x: hidden;
+  padding-right: 4px;
+  padding-bottom: 48px; /* space for bottom fade overlay */
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 107, 53, 0.4) transparent;
 }
 
-/* Sample DEV SOS Card */
+.disha-right-panel__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.disha-right-panel__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.disha-right-panel__body::-webkit-scrollbar-thumb {
+  background: rgba(255, 107, 53, 0.35);
+  border-radius: 4px;
+}
+
+.disha-right-panel__body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 107, 53, 0.65);
+}
+
+/* ─── TAB 1: SOS CARDS ─── */
+.disha-right-panel__feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 .disha-sample-sos-card {
   display: flex;
   align-items: flex-start;
@@ -133,7 +173,6 @@
   border: 1px solid rgba(255, 107, 53, 0.25);
   border-radius: var(--radius-md);
   box-shadow: 0 2px 10px rgba(255, 107, 53, 0.08);
-  margin-bottom: var(--space-4);
 }
 
 .disha-sample-sos-card__rank-badge {
@@ -227,7 +266,6 @@
   color: var(--color-primary);
 }
 
-/* SOS Card Interactive & Animation Styles */
 .disha-sos-card {
   cursor: pointer;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
@@ -291,3 +329,426 @@
 .disha-sos-card.is-delivered-flash {
   animation: dishaDeliveredFlash 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ─── TAB 2: FAILURES TAB ─── */
+.disha-failure-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.disha-failure-summary-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-md);
+  color: #DC2626;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.disha-failure-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #FFFFFF;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.08);
+  transition: all var(--transition-fast);
+}
+
+.disha-failure-card:hover {
+  border-color: #EF4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.16);
+}
+
+.disha-failure-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.disha-failure-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.disha-failure-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #DC2626;
+}
+
+.disha-failure-card__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-dark);
+}
+
+.disha-failure-card__status {
+  font-size: 11px;
+  color: #DC2626;
+  font-weight: 600;
+}
+
+.disha-failure-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.disha-failure-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--color-border);
+}
+
+/* ─── TAB 3: LOG TAB ─── */
+.disha-right-panel__log-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.disha-log-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.disha-log-chips {
+  display: flex;
+  gap: 4px;
+}
+
+.disha-log-chip {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(17, 24, 39, 0.05);
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.disha-log-chip:hover {
+  background: rgba(17, 24, 39, 0.09);
+  color: var(--color-dark);
+}
+
+.disha-log-chip.is-active {
+  background: var(--color-dark);
+  color: #ffffff;
+}
+
+.disha-log-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color var(--transition-fast);
+}
+
+.disha-log-clear-btn:hover {
+  color: #EF4444;
+}
+
+.disha-log-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-family);
+}
+
+.disha-log-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+}
+
+.disha-log-row__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.disha-log-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.disha-log-badge--success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.disha-log-badge--info {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563EB;
+}
+
+.disha-log-badge--warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #D97706;
+}
+
+.disha-log-badge--danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #DC2626;
+}
+
+.disha-log-badge--neutral {
+  background: rgba(100, 116, 139, 0.15);
+  color: #475569;
+}
+
+.disha-log-row__time {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.disha-log-row__detail {
+  color: var(--color-dark);
+  line-height: 1.3;
+}
+
+.disha-log-row__detail strong {
+  color: var(--color-primary);
+}
+
+.disha-log-row__detail code {
+  font-family: monospace;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* ─── TAB 4: SNIFFING TAB ─── */
+.disha-right-panel__sniffing-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.disha-sniffing-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: var(--radius-md);
+}
+
+.disha-sniffing-banner__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(139, 92, 246, 0.18);
+  color: #7C3AED;
+  flex-shrink: 0;
+}
+
+.disha-sniffing-banner__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6D28D9;
+}
+
+.disha-sniffing-banner__desc {
+  margin: 2px 0 0 0;
+  font-size: 11px;
+  color: #4B5563;
+  line-height: 1.35;
+}
+
+.disha-sniffing-action {
+  width: 100%;
+}
+
+.disha-sniffing-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.disha-sniffing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #FFFFFF;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.06);
+}
+
+.disha-sniffing-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.disha-sniffing-card__hash {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6D28D9;
+}
+
+.disha-sniffing-card__middle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.disha-sniffing-card__observer strong,
+.disha-sniffing-card__distance strong {
+  color: var(--color-dark);
+}
+
+.disha-sniffing-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.disha-sniffing-card__time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+/* ─── SIMULATED Badge & Tags for Sniffing Tab ─── */
+.disha-sniffing-sim-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-md);
+}
+
+.disha-sniffing-sim-notice__top {
+  display: flex;
+  align-items: center;
+}
+
+.disha-sim-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #D97706;
+  font-family: var(--font-family);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.disha-sniffing-sim-note {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 11px;
+  color: #B45309;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.disha-sim-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #D97706;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  margin-left: 4px;
+}
+
+/* ── Source-kind badges (HW / SIM) on SOS cards and Sniffing cards ── */
+.disha-source-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  margin-left: 4px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* Green — physical ESP32 hardware */
+.disha-source-badge--hw {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #16A34A;
+}
+
+/* Amber — simulated / dashboard-originated */
+.disha-source-badge--sim {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #D97706;
+}
+

@@ -462,7 +462,11 @@ function App() {
           </div>
 
           {/* Right Panel: SOS, Failures, Log, Sniffing tabs */}
-          <RightPanel onSelectNode={handleSelectSosNode} />
+          <RightPanel
+            nodes={nodes}
+            onSelectNode={handleSelectSosNode}
+            onReviveNode={handleReviveNode}
+          />
         </div>
       </div>
 
