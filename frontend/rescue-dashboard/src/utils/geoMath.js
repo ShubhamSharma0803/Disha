@@ -5,6 +5,8 @@
  * internal helpers work in radians.
  */
 
+import { normalizeNodeId } from './nodeUtils.js';
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const EARTH_RADIUS_M = 6_371_000; // Mean Earth radius in metres
@@ -442,23 +444,52 @@ export function exportAutopilotMission(
  * @param {string} startNodeId – ID of the starting node (e.g. 'NODE-04')
  * @param {Array<{ from: string, to: string, distance_m?: number }>} links – Array of mesh links
  * @param {string} targetId – Target node ID, default 'GATEWAY'
+ * @param {Set<string>|Array<string>} [offlineNodeIds] – Set or Array of offline node IDs to exclude
  * @returns {Array<string>} Ordered list of node IDs along the shortest path, e.g. ['NODE-04', 'NODE-01', 'GATEWAY']
  */
-export function findShortestPathToGateway(startNodeId, links, targetId = 'GATEWAY') {
+export function findShortestPathToGateway(
+  startNodeId,
+  links,
+  targetId = 'GATEWAY',
+  offlineNodeIds = new Set(),
+) {
   if (!startNodeId || !links || links.length === 0) return [];
-  if (startNodeId === targetId) return [targetId];
 
-  // Build bidirectional adjacency graph
+  const startId = normalizeNodeId(startNodeId);
+  const gwId = normalizeNodeId(targetId);
+
+  // Normalize offline node IDs into a quick-lookup Set
+  const offlineArr = offlineNodeIds instanceof Set
+    ? Array.from(offlineNodeIds)
+    : (Array.isArray(offlineNodeIds) ? offlineNodeIds : []);
+  const offlineSet = new Set(offlineArr.map(normalizeNodeId));
+
+  // If start node or gateway itself is offline, no route exists
+  if (offlineSet.has(startId) || offlineSet.has(gwId)) {
+    return [];
+  }
+
+  if (startId === gwId) return [gwId];
+
+  // Build bidirectional adjacency graph skipping any offline nodes/links
   const adj = new Map();
   links.forEach((l) => {
+    const fromId = normalizeNodeId(l.from);
+    const toId = normalizeNodeId(l.to);
+
+    // Skip links touching any offline node
+    if (offlineSet.has(fromId) || offlineSet.has(toId)) {
+      return;
+    }
+
     const d = typeof l.distance_m === 'number' && l.distance_m > 0 ? l.distance_m : 1;
-    if (!adj.has(l.from)) adj.set(l.from, []);
-    if (!adj.has(l.to)) adj.set(l.to, []);
-    adj.get(l.from).push({ node: l.to, dist: d });
-    adj.get(l.to).push({ node: l.from, dist: d });
+    if (!adj.has(fromId)) adj.set(fromId, []);
+    if (!adj.has(toId)) adj.set(toId, []);
+    adj.get(fromId).push({ node: toId, dist: d });
+    adj.get(toId).push({ node: fromId, dist: d });
   });
 
-  if (!adj.has(startNodeId) || !adj.has(targetId)) return [];
+  if (!adj.has(startId) || !adj.has(gwId)) return [];
 
   // Dijkstra's algorithm
   const distances = new Map();
@@ -469,7 +500,7 @@ export function findShortestPathToGateway(startNodeId, links, targetId = 'GATEWA
     distances.set(node, Infinity);
     unvisited.add(node);
   });
-  distances.set(startNodeId, 0);
+  distances.set(startId, 0);
 
   while (unvisited.size > 0) {
     let curr = null;
@@ -482,7 +513,7 @@ export function findShortestPathToGateway(startNodeId, links, targetId = 'GATEWA
       }
     });
 
-    if (curr === null || minDist === Infinity || curr === targetId) {
+    if (curr === null || minDist === Infinity || curr === gwId) {
       break;
     }
 
@@ -499,16 +530,16 @@ export function findShortestPathToGateway(startNodeId, links, targetId = 'GATEWA
     }
   }
 
-  // Reconstruct path from startNodeId to targetId
-  if (!previous.has(targetId) && startNodeId !== targetId) return [];
+  // Reconstruct path from startId to gwId
+  if (!previous.has(gwId) && startId !== gwId) return [];
 
   const path = [];
-  let step = targetId;
+  let step = gwId;
   while (step) {
     path.unshift(step);
     step = previous.get(step);
-    if (step === startNodeId) {
-      path.unshift(startNodeId);
+    if (step === startId) {
+      path.unshift(startId);
       break;
     }
   }

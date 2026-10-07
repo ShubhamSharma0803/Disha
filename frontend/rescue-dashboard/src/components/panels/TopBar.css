@@ -1,0 +1,99 @@
+.disha-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 var(--space-6);
+  background: var(--color-surface-solid);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border-card);
+  border-radius: 24px;
+  box-shadow: var(--shadow-card);
+  user-select: none;
+  z-index: 50;
+  pointer-events: auto;
+  outline: none;
+}
+
+.disha-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.disha-topbar__logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+}
+
+.disha-topbar__wordmark-group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.disha-topbar__wordmark {
+  font-family: var(--font-family);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--color-dark);
+}
+
+.disha-topbar__badge {
+  font-family: var(--font-family);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #2563EB;
+  background: rgba(59, 130, 246, 0.12);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.disha-topbar__steps {
+  display: flex;
+  align-items: center;
+}
+
+.disha-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* 40px icon button with 12px radius */
+.disha-topbar__refresh-btn {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  background: #F3F4F6 !important;
+  border: 1px solid rgba(17, 24, 39, 0.08) !important;
+  color: #111827 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all var(--transition-fast) !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+}
+
+.disha-topbar__refresh-btn:hover {
+  background: #FFFFFF !important;
+  color: var(--color-primary) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-1px) !important;
+}
+
+.disha-topbar__refresh-btn:active {
+  transform: translateY(0) !important;
+}

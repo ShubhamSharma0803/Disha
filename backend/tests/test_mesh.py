@@ -138,7 +138,7 @@ async def _run_multi_hop(tmp_dir: str) -> Gateway:
     await n1.start()
     await n2.start()
 
-    await asyncio.sleep(3.5)
+    await asyncio.sleep(5.0)
 
     emergency = Packet(
         packet_id="PKT-TEST-MULTI",
@@ -192,7 +192,7 @@ async def _run_ttl_expiry(tmp_dir: str) -> Gateway:
     await n1.start()
     await n2.start()
 
-    await asyncio.sleep(3.5)
+    await asyncio.sleep(5.0)
 
     pkt = Packet(
         packet_id="PKT-TTL-TEST",
@@ -237,7 +237,7 @@ async def _run_duplicate_test(tmp_dir: str) -> Gateway:
     await n1.start()
     await n2.start()
 
-    await asyncio.sleep(3.5)
+    await asyncio.sleep(5.0)
 
     for _ in range(2):
         pkt = Packet(
@@ -284,7 +284,7 @@ async def _run_route_failover_test(tmp_dir: str) -> tuple[dict, list[dict]]:
 
     net = MeshNetwork(topo)
     await net.start()
-    await asyncio.sleep(3.5)  # allow route convergence
+    await asyncio.sleep(5.0)  # allow route convergence (HELLO 2s + timeout 8s)
 
     # First packet: NODE-02 -> GATEWAY
     pkt1 = Packet(
@@ -338,9 +338,14 @@ def test_route_failover_and_events():
     route2 = res["delivered2"][0].route
     assert res["primary_hop"] not in route2, "Alternative route must not contain the killed node"
 
-    # Assert NODE_FAILED event was emitted for primary_hop
-    failed_events = [e for e in collected if e.get("event") == "NODE_FAILED" and e.get("node_id") == res["primary_hop"]]
-    assert len(failed_events) >= 1, f"Expected NODE_FAILED event for {res['primary_hop']}"
+    # Assert NODE_FAILED event was emitted for primary_hop by SIMULATOR (authoritative kill)
+    failed_events = [
+        e for e in collected
+        if e.get("event") == "NODE_FAILED"
+        and e.get("node_id") == res["primary_hop"]
+        and e.get("detected_by") == "SIMULATOR"
+    ]
+    assert len(failed_events) >= 1, f"Expected NODE_FAILED (SIMULATOR) event for {res['primary_hop']}"
 
     # Assert ROUTE_CHANGED event was emitted
     route_events = [e for e in collected if e.get("event") == "ROUTE_CHANGED"]
@@ -359,7 +364,7 @@ async def _run_gateway_isolation_test(tmp_dir: str) -> tuple[Node, Gateway]:
 
     net = MeshNetwork(topo)
     await net.start()
-    await asyncio.sleep(3.5)
+    await asyncio.sleep(5.0)
 
     # Kill GATEWAY's only neighbour (NODE-01)
     await net.kill_node("NODE-01")
@@ -402,6 +407,155 @@ def test_gateway_isolation():
 
 
 # ---------------------------------------------------------------------------
+#  7. In-flight kill with hop delay: assert PACKET_REROUTED and PACKET_DELIVERED
+# ---------------------------------------------------------------------------
+
+async def _run_inflight_kill_test(tmp_dir: str) -> tuple[dict, list[dict]]:
+    collected: list[dict] = []
+    events.clear()
+    events.register(lambda e: collected.append(e))
+
+    path = _make_diamond_topology(tmp_dir)
+    topo = load_topology(path)
+
+    net = MeshNetwork(topo)
+    await net.start()
+    await asyncio.sleep(5.0)
+
+    primary_hop = net.nodes["NODE-02"].router.next_hop
+    assert primary_hop in ("NODE-01", "NODE-03")
+    alt_hop = "NODE-03" if primary_hop == "NODE-01" else "NODE-01"
+
+    # Set small nonzero hop delay so packet stays in flight at NODE-02
+    os.environ["HOP_DELAY_S"] = "0.4"
+
+    pkt = Packet(
+        packet_id="PKT-INFLIGHT-REROUTE",
+        packet_type="EMERGENCY",
+        source="NODE-02",
+        destination="GATEWAY",
+        payload={"code": "TRP", "priority": 1, "people": 2, "note": "trapped inflight", "source_kind": "simulated"},
+    )
+
+    originate_task = asyncio.create_task(net.nodes["NODE-02"].originate(pkt))
+
+    # Wait briefly while packet is in flight at NODE-02 before primary_hop is reached
+    await asyncio.sleep(0.1)
+
+    # Kill primary next hop while packet is in flight
+    await net.kill_node(primary_hop)
+
+    # Wait for failover, reroute, and delivery
+    await originate_task
+    await asyncio.sleep(1.5)
+
+    delivered = [p for p in net.gateway.delivered if p.packet_id == "PKT-INFLIGHT-REROUTE"]
+
+    await net.stop()
+    os.environ["HOP_DELAY_S"] = "0"
+    return {"primary_hop": primary_hop, "alt_hop": alt_hop, "delivered": delivered}, collected
+
+
+def test_inflight_kill_reroutes_and_delivers():
+    events.clear()
+    with tempfile.TemporaryDirectory() as tmp:
+        res, collected = asyncio.run(_run_inflight_kill_test(tmp))
+
+    assert len(res["delivered"]) == 1, "Packet should be delivered via alternative route"
+    route = res["delivered"][0].route
+    assert res["primary_hop"] not in route, "Killed primary hop should not be in final route"
+    assert res["alt_hop"] in route, "Alternative hop must be used in final route"
+
+    # Check for PACKET_REROUTED event
+    rerouted_events = [
+        e for e in collected
+        if (e.get("event") == "PACKET_REROUTED" or e.get("type") == "PACKET_REROUTED")
+        and e.get("packet_id") == "PKT-INFLIGHT-REROUTE"
+    ]
+    assert len(rerouted_events) >= 1, "Expected PACKET_REROUTED event to be emitted"
+    reroute = rerouted_events[0]
+    assert reroute["at_node"] == "NODE-02"
+    assert reroute["failed_next_hop"] == res["primary_hop"]
+    assert reroute["new_next_hop"] == res["alt_hop"]
+
+    # Check that PACKET_DELIVERED came after PACKET_REROUTED
+    rerouted_idx = collected.index(reroute)
+    delivered_events = [
+        (idx, e) for idx, e in enumerate(collected)
+        if (e.get("event") == "PACKET_DELIVERED" or e.get("type") == "PACKET_DELIVERED")
+        and e.get("packet_id") == "PKT-INFLIGHT-REROUTE"
+    ]
+    assert len(delivered_events) >= 1, "Expected PACKET_DELIVERED event"
+    deliv_idx, deliv_event = delivered_events[0]
+    assert deliv_idx > rerouted_idx, "PACKET_REROUTED must precede PACKET_DELIVERED"
+    assert deliv_event["code"] == "TRP"
+    assert deliv_event["priority"] == 1
+    assert deliv_event["people"] == 2
+    assert deliv_event["note"] == "trapped inflight"
+    assert deliv_event["source_kind"] == "simulated"
+
+    events.clear()
+
+
+# ---------------------------------------------------------------------------
+#  8. NEIGHBOUR_LOST semantics: liveness timeout emits NEIGHBOUR_LOST, not NODE_FAILED
+# ---------------------------------------------------------------------------
+
+def test_neighbour_lost_not_node_failed():
+    """After killing a node, neighbours should eventually emit NEIGHBOUR_LOST
+    (not NODE_FAILED) when they detect the timeout."""
+    events.clear()
+    collected: list[dict] = []
+    events.register(lambda e: collected.append(e))
+
+    async def _run():
+        with tempfile.TemporaryDirectory() as tmp:
+            path = _make_linear_topology(tmp)
+            topo = load_topology(path)
+            net = MeshNetwork(topo)
+            await net.start()
+            await asyncio.sleep(5.0)
+
+            # Kill NODE-02 — this emits NODE_FAILED (SIMULATOR)
+            await net.kill_node("NODE-02")
+            # Wait for NODE-01 to detect the loss via liveness
+            await asyncio.sleep(12.0)
+
+            await net.stop()
+
+    asyncio.run(_run())
+
+    # NODE_FAILED from SIMULATOR should exist
+    sim_failed = [
+        e for e in collected
+        if e.get("event") == "NODE_FAILED"
+        and e.get("node_id") == "NODE-02"
+        and e.get("detected_by") == "SIMULATOR"
+    ]
+    assert len(sim_failed) >= 1, "Expected NODE_FAILED from SIMULATOR for NODE-02"
+
+    # Neighbour detection should emit NEIGHBOUR_LOST, not NODE_FAILED
+    neighbour_detected_failed = [
+        e for e in collected
+        if e.get("event") == "NODE_FAILED"
+        and e.get("node_id") == "NODE-02"
+        and e.get("detected_by") != "SIMULATOR"
+    ]
+    assert len(neighbour_detected_failed) == 0, (
+        f"Neighbours should emit NEIGHBOUR_LOST, not NODE_FAILED, got {len(neighbour_detected_failed)} NODE_FAILED from neighbours"
+    )
+
+    neighbour_lost = [
+        e for e in collected
+        if e.get("event") == "NEIGHBOUR_LOST"
+        and e.get("neighbour_id") == "NODE-02"
+    ]
+    assert len(neighbour_lost) >= 1, "Expected NEIGHBOUR_LOST event from a detecting neighbour"
+
+    events.clear()
+
+
+# ---------------------------------------------------------------------------
 #  Runner
 # ---------------------------------------------------------------------------
 
@@ -432,6 +586,14 @@ if __name__ == "__main__":
 
     print("test_gateway_isolation ...", end=" ")
     test_gateway_isolation()
+    print("PASSED")
+
+    print("test_inflight_kill_reroutes_and_delivers ...", end=" ")
+    test_inflight_kill_reroutes_and_delivers()
+    print("PASSED")
+
+    print("test_neighbour_lost_not_node_failed ...", end=" ")
+    test_neighbour_lost_not_node_failed()
     print("PASSED")
 
     print("\nALL MESH TESTS PASSED")

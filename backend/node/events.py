@@ -22,8 +22,12 @@ def clear() -> None:
 
 
 def emit(event: dict[str, Any]) -> dict[str, Any]:
-    """Fill timestamp, print as JSON line, call all callbacks, return the event."""
+    """Fill timestamp, ensure type matches event, print as JSON line, call all callbacks, return the event."""
     event.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+    if "event" in event and "type" not in event:
+        event["type"] = event["event"]
+    elif "type" in event and "event" not in event:
+        event["event"] = event["type"]
     line = json.dumps(event, default=str)
     print(line, file=sys.stdout, flush=True)
     for cb in _callbacks:

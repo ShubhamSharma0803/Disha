@@ -1,0 +1,99 @@
+.ui-stat-card {
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: 18px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: transform var(--transition-fast, 0.15s ease), box-shadow var(--transition-fast, 0.15s ease);
+  min-height: 96px;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.ui-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.ui-stat-card--white,
+.ui-stat-card--default {
+  background: #ffffff;
+  border: 1px solid var(--color-border, #E2E8F0);
+}
+
+.ui-stat-card--gradient {
+  background: linear-gradient(135deg, var(--color-primary-active, #2563EB) 0%, var(--color-primary, #3B82F6) 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.28);
+}
+
+.ui-stat-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.ui-stat-card__title {
+  font-family: var(--font-family);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-text-muted, #4B5563);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.ui-stat-card--gradient .ui-stat-card__title {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ui-stat-card__icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--color-gray-100, #F1F5F9);
+  color: var(--color-text-muted, #4B5563);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ui-stat-card--gradient .ui-stat-card__icon-wrap {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+.ui-stat-card__value {
+  font-family: var(--font-family);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-dark, #18181B);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 2px 0;
+}
+
+.ui-stat-card--gradient .ui-stat-card__value {
+  color: #FFFFFF;
+}
+
+.ui-stat-card__caption {
+  font-family: var(--font-family);
+  font-size: 10.5px;
+  color: var(--color-text-muted, #6B7280);
+  line-height: 1.25;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-stat-card--gradient .ui-stat-card__caption {
+  color: rgba(255, 255, 255, 0.85);
+}

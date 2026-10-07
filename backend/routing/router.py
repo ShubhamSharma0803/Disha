@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass
 
 INF = float("inf")
-NEIGHBOUR_TIMEOUT_S = 3.0  # consider a neighbour dead after 3 seconds of silence
+NEIGHBOUR_TIMEOUT_S = 8.0  # consider a neighbour dead after 8 seconds of silence
 
 
 @dataclass

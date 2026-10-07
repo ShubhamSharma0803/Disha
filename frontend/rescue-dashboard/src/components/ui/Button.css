@@ -1,0 +1,189 @@
+.disha-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: var(--font-size-body);
+  line-height: 1.25;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+  text-decoration: none;
+  outline: none;
+}
+
+.disha-btn:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.disha-btn.is-disabled,
+.disha-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* SIZES */
+.disha-btn--sm {
+  padding: 6px 12px;
+  font-size: var(--font-size-small);
+  border-radius: 10px;
+}
+
+.disha-btn--md {
+  padding: 10px 18px;
+  font-size: var(--font-size-body);
+  border-radius: var(--radius-sm);
+}
+
+.disha-btn--lg {
+  padding: 14px 24px;
+  font-size: var(--font-size-body);
+  font-weight: 700;
+  border-radius: var(--radius-md);
+}
+
+/* VARIANTS */
+.disha-btn--primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.disha-btn--primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.disha-btn--primary:active:not(:disabled) {
+  background-color: var(--color-primary-active);
+  transform: translateY(0);
+}
+
+.disha-btn--secondary {
+  background-color: var(--color-card-bg);
+  color: var(--color-text-main);
+  border: 2px solid var(--color-border);
+}
+
+.disha-btn--secondary:hover:not(:disabled) {
+  background-color: var(--color-bg);
+  border-color: var(--color-gray-300);
+  transform: translateY(-1px);
+}
+
+.disha-btn--secondary:active:not(:disabled) {
+  background-color: var(--color-gray-200);
+  transform: translateY(0);
+}
+
+.disha-btn--dark {
+  background-color: var(--color-dark);
+  color: var(--color-white);
+  box-shadow: 0 2px 8px rgba(24, 24, 27, 0.2);
+}
+
+.disha-btn--dark:hover:not(:disabled) {
+  background-color: #27272a;
+  transform: translateY(-1px);
+}
+
+.disha-btn--dark:active:not(:disabled) {
+  background-color: #09090b;
+  transform: translateY(0);
+}
+
+.disha-btn--danger {
+  background-color: var(--color-danger, #EF4444);
+  color: var(--color-white, #FFFFFF);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+
+.disha-btn--danger:hover:not(:disabled) {
+  background-color: #DC2626;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+  transform: translateY(-1px);
+}
+
+.disha-btn--danger:active:not(:disabled) {
+  background-color: #B91C1C;
+  transform: translateY(0);
+}
+
+.disha-btn--success {
+  background-color: var(--color-success, #10B981);
+  color: var(--color-white, #FFFFFF);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.disha-btn--success:hover:not(:disabled) {
+  background-color: #059669;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+  transform: translateY(-1px);
+}
+
+.disha-btn--success:active:not(:disabled) {
+  background-color: #047857;
+  transform: translateY(0);
+}
+
+.disha-btn--glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-main);
+  box-shadow: var(--shadow-sm);
+}
+
+.disha-btn--glass:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+/* ICON ONLY BUTTON */
+.disha-btn--icon {
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-main);
+  box-shadow: var(--shadow-sm);
+}
+
+.disha-btn--icon.disha-btn--sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+.disha-btn--icon.disha-btn--lg {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+}
+
+.disha-btn--icon:hover:not(:disabled) {
+  background: #ffffff;
+  color: var(--color-primary);
+  border-color: var(--color-border);
+  transform: translateY(-1px);
+}
+
+.disha-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}

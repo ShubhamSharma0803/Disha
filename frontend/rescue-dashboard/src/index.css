@@ -1,7 +1,13 @@
-/* ─── Global Reset & Dark Defaults ───────────────────────────────────────── */
+/* ─── Self-Hosted Font (Outfit) ───────────────────────────────────────────── */
+@import '@fontsource/outfit/400.css';
+@import '@fontsource/outfit/500.css';
+@import '@fontsource/outfit/600.css';
+@import '@fontsource/outfit/700.css';
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
+@import './styles/tokens.css';
 
+/* ─── Reset & Base Defaults ──────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -15,9 +21,9 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #0a0f1e;
-  color: #e2e8f0;
+  font-family: var(--font-family);
+  background: var(--color-bg);
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -25,4 +31,70 @@ body {
 #root {
   width: 100%;
   height: 100%;
+  position: relative;
+}
+
+/* ─── Scrollbars ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+/* ─── Stripe Progress Utility ────────────────────────────────────────────── */
+@keyframes progressStripeMove {
+  0% {
+    background-position: 1rem 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+.progress-stripe {
+  position: relative;
+  width: 100%;
+  height: 16px;
+  background-color: #F3F4F6;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-stripe__fill {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: 9999px;
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.22) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.22) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+  transition: width var(--transition-normal);
+  animation: progressStripeMove 1s linear infinite;
+}
+
+/* ─── Focus Rings ────────────────────────────────────────────────────────── */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }

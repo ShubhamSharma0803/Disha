@@ -1,0 +1,102 @@
+.disha-reroute-banner {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.08);
+  font-family: var(--font-family);
+  animation: disha-banner-slide-down 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+  user-select: none;
+  max-width: 90vw;
+}
+
+@keyframes disha-banner-slide-down {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+/* Rerouted: Orange accent */
+.disha-reroute-banner--rerouted {
+  background: #FFF7ED;
+  border: 1px solid rgba(255, 107, 53, 0.35);
+  color: #9A3412;
+}
+
+.disha-reroute-banner--rerouted .disha-reroute-banner__icon {
+  color: var(--color-accent);
+  background: rgba(255, 107, 53, 0.15);
+}
+
+/* Dropped: Red accent */
+.disha-reroute-banner--dropped {
+  background: #FEF2F2;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #991B1B;
+}
+
+.disha-reroute-banner--dropped .disha-reroute-banner__icon {
+  color: #DC2626;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.disha-reroute-banner__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.disha-reroute-banner__body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.disha-reroute-banner__title {
+  font-size: var(--font-size-tiny);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+
+.disha-reroute-banner__msg {
+  font-size: var(--font-size-small);
+  font-weight: 600;
+}
+
+.disha-reroute-banner__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 4px;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.disha-reroute-banner__close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+}

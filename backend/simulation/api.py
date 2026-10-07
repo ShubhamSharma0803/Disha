@@ -6,8 +6,8 @@ import json
 import os
 import sys
 import uuid
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel
+from typing import Any, Dict, List, Literal, Optional
+from pydantic import BaseModel, Field, field_validator
 from fastapi import APIRouter, Body, HTTPException, WebSocket, WebSocketDisconnect
 
 # Ensure path
@@ -19,6 +19,7 @@ from backend.node.config import load_topology, Topology
 from backend.node.packet import Packet
 from backend.node import events
 from backend.simulation.run_sim import MeshNetwork
+from backend.simulation.sos import sos_tracker
 
 router = APIRouter()
 
@@ -64,10 +65,49 @@ def _event_bus_listener(event: dict[str, Any]) -> None:
 events.register(_event_bus_listener)
 
 
+VALID_CODES = {"MED", "TRP", "MIS", "FWD", "SHL", "SAF"}
+
+CODE_PRIORITY = {
+    "MED": 1,
+    "TRP": 1,
+    "MIS": 2,
+    "FWD": 3,
+    "SHL": 3,
+    "SAF": 4,
+}
+
+TYPE_TO_CODE = {
+    "MEDICAL": "MED",
+    "TRAPPED": "TRP",
+    "MISSING": "MIS",
+    "FOOD": "FWD",
+    "WATER": "FWD",
+    "FOOD_WATER": "FWD",
+    "SHELTER": "SHL",
+    "SAFE": "SAF",
+}
+
+
 class EmergencyRequest(BaseModel):
     source: str
-    type: str
-    message: str
+    type: Optional[str] = None
+    message: Optional[str] = None
+    code: Optional[str] = None
+    people: int = Field(default=1, ge=1, le=9)
+    note: Optional[str] = Field(default=None, max_length=40)
+    source_kind: Optional[Literal["hardware", "simulated", "dashboard"]] = "simulated"
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            v_upper = v.upper()
+            if v_upper not in VALID_CODES:
+                raise ValueError(
+                    f"Invalid emergency code '{v}'. Must be one of {sorted(VALID_CODES)}"
+                )
+            return v_upper
+        return v
 
 
 @router.post("/simulation/start")
@@ -94,6 +134,7 @@ async def start_simulation(deployment: Optional[Dict[str, Any]] = Body(None)):
         # Brief pause to allow initial HELLO packets to exchange
         await asyncio.sleep(1.5)
         current_net = net
+        sos_tracker.clear()
 
     return {
         "status": "started",
@@ -104,8 +145,9 @@ async def start_simulation(deployment: Optional[Dict[str, Any]] = Body(None)):
 
 
 @router.post("/simulation/emergency")
+@router.post("/sos")
 async def send_emergency(req: EmergencyRequest):
-    """Originate an EMERGENCY packet from a source node."""
+    """Originate an EMERGENCY packet from a source node (accessible via /simulation/emergency or /sos)."""
     if current_net is None:
         raise HTTPException(
             status_code=400,
@@ -114,12 +156,59 @@ async def send_emergency(req: EmergencyRequest):
     if req.source not in current_net.nodes:
         raise HTTPException(status_code=404, detail=f"Node {req.source} not found")
 
+    code = req.code
+    if code is None and req.type:
+        code = TYPE_TO_CODE.get(req.type.upper())
+
+    if code in ("MED", "TRP"):
+        priority = 1
+    elif code == "MIS":
+        priority = 2
+    elif code in ("FWD", "SHL"):
+        priority = 3
+    elif code == "SAF":
+        priority = 4
+    elif req.type and req.type.upper() == "FIRE":
+        priority = 1
+    else:
+        priority = 4
+
+    ptype = req.type or code or "EMERGENCY"
+    pmsg = req.message or req.note or ""
+    pnote = req.note or (req.message[:40] if req.message else None)
+    psource_kind = req.source_kind or "simulated"
+
+    payload = {
+        "type": ptype,
+        "message": pmsg,
+        "code": code,
+        "priority": priority,
+        "people": req.people,
+        "note": pnote,
+        "source_kind": psource_kind,
+    }
+
     pkt = Packet(
         packet_id=f"PKT-EMG-{uuid.uuid4().hex[:8].upper()}",
         packet_type="EMERGENCY",
         source=req.source,
         destination="GATEWAY",
-        payload={"type": req.type, "message": req.message},
+        payload=payload,
+    )
+
+    sos_tracker.record_emergency(
+        packet_id=pkt.packet_id,
+        source=req.source,
+        destination="GATEWAY",
+        code=code,
+        priority=priority,
+        people=req.people,
+        note=pnote,
+        source_kind=psource_kind,
+        type=ptype,
+        message=pmsg,
+        created_at=pkt.timestamp,
+        route=[req.source],
     )
 
     # Launch originate task and yield to event loop so creation event emits immediately
@@ -130,8 +219,13 @@ async def send_emergency(req: EmergencyRequest):
         "status": "originated",
         "packet_id": pkt.packet_id,
         "source": req.source,
-        "type": req.type,
-        "message": req.message,
+        "type": ptype,
+        "message": pmsg,
+        "code": code,
+        "priority": priority,
+        "people": req.people,
+        "note": pnote,
+        "source_kind": psource_kind,
     }
 
 
@@ -185,6 +279,13 @@ async def get_simulation_state():
         "state": nodes_dict,
         **nodes_dict,
     }
+
+
+@router.get("/simulation/sos")
+@router.get("/sos")
+async def get_simulation_sos():
+    """Return all emergencies so far ranked by priority asc, people desc, created time asc."""
+    return sos_tracker.get_all_ranked()
 
 
 @router.websocket("/ws/events")

@@ -25,6 +25,12 @@ class Gateway(Node):
             "event": "PACKET_DELIVERED",
             "packet_id": pkt.packet_id,
             "route": pkt.route,
+            "hop_count": pkt.hop_count,
+            "code": pkt.payload.get("code"),
+            "priority": pkt.payload.get("priority"),
+            "people": pkt.payload.get("people", 1),
+            "note": pkt.payload.get("note"),
+            "source_kind": pkt.payload.get("source_kind"),
         })
 
         # Send ACK back along the reverse of the route

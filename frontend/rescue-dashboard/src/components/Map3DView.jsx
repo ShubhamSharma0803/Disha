@@ -1,9 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { ScatterplotLayer } from '@deck.gl/layers';
 import { haversineDistance, calculateBoundaryBox, offsetToGps } from '../utils/geoMath';
+import { normalizeNodeId } from '../utils/nodeUtils';
+import { subscribe } from '../state/meshEvents';
+import { SOS_CATEGORIES } from '../state/sosStore';
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
@@ -16,10 +19,26 @@ const INITIAL_BEARING = -15;
 
 /** RGBA colours keyed by node status */
 const STATUS_RGBA = {
-  PLANNED: [96, 165, 250, 240],   // blue-400
-  ACTIVE:  [52, 211, 153, 240],   // emerald-400
-  OFFLINE: [248, 113, 113, 240],  // red-400
+  PLANNED: [148, 163, 184, 240],   // slate-400 #94A3B8
+  ACTIVE:  [16, 185, 129, 240],    // emerald-500 #10B981
+  OFFLINE: [239, 68, 68, 240],     // red-500 #EF4444
 };
+
+/** Priority RGB colors for origin pulsing beacon rings */
+const PRIORITY_COLORS = {
+  1: [239, 68, 68],   // Red (MED, TRP)
+  2: [245, 158, 11],  // Amber (MIS)
+  3: [59, 130, 246],  // Blue (FWD, SHL)
+  4: [16, 185, 129],  // Emerald (SAF)
+};
+
+/** Hop animation duration in milliseconds (~0.6s) */
+const HOP_DURATION_MS = 600;
+
+/** Smooth cubic ease-in-out easing function */
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
 
 /** Duration of camera fly-to animation when centre changes (ms) */
 const FLY_DURATION_MS = 2000;
@@ -82,7 +101,7 @@ function getBoundaryGeoJSON(centerLat, centerLon, areaSqKm) {
  * mesh lines, node pins, and labels) are draped directly onto the 3D terrain surface with
  * zero parallax drift, while simulation drones fly in 3D space above the terrain.
  */
-export default function Map3DView({
+const Map3DView = forwardRef(function Map3DView({
   centerLat,
   centerLon,
   areaSqKm = 4,
@@ -93,7 +112,7 @@ export default function Map3DView({
   links = [],
   gateway = null,
   highlightedPath = null,
-}) {
+}, ref) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const overlayRef = useRef(null);
@@ -128,6 +147,35 @@ export default function Map3DView({
   gatewayRef.current = gateway;
 
   const activeDronesRef = useRef([]);
+
+  // SOS packet animation refs
+  const trackedSosPacketsRef = useRef(new Map());
+  const failedSosLinksRef = useRef([]);
+  const gatewayPulsesRef = useRef([]);
+  const sosAnimDataRef = useRef({
+    originRings: [],
+    gatewayPulses: [],
+    activeDots: [],
+    activeDotsGlow: [],
+    trails: [],
+    droppedDots: [],
+  });
+  const sosAnimationRef = useRef(null);
+
+  // ── Lookup GPS coordinates for any node ID or GATEWAY ───────────────────
+  const getNodeCoord = useCallback((nodeId) => {
+    if (!nodeId) return null;
+    const norm = normalizeNodeId(nodeId);
+    if (norm === 'GATEWAY') {
+      const sideM = Math.sqrt(Math.max(0.1, Number(areaSqKmRef.current) || 4)) * 1000;
+      const defaultGateway = offsetToGps(centerLatRef.current, centerLonRef.current, 0, -sideM / 2);
+      const gw = gatewayRef.current || defaultGateway;
+      return [gw.lon, gw.lat];
+    }
+    const n = nodesRef.current.find((item) => normalizeNodeId(item.id) === norm);
+    if (n) return [n.lon, n.lat];
+    return null;
+  }, []);
 
   // ── Query terrain elevation in metres at any [lon, lat] coordinate ───────
   const getTerrainAlt = useCallback((lon, lat) => {
@@ -187,14 +235,15 @@ export default function Map3DView({
     const linksSrc = map.getSource('mesh-links-draped');
     if (linksSrc) {
       const nodeMap = new Map();
-      currentNodes.forEach((n) => nodeMap.set(n.id, n));
+      currentNodes.forEach((n) => nodeMap.set(normalizeNodeId(n.id), n));
       nodeMap.set('GATEWAY', { id: 'GATEWAY', lon: gwLon, lat: gwLat, status: 'ACTIVE' });
 
       const linkFeatures = currentLinks
         .map((lnk) => {
-          const fromNode = nodeMap.get(lnk.from);
-          const toNode = nodeMap.get(lnk.to);
+          const fromNode = nodeMap.get(normalizeNodeId(lnk.from));
+          const toNode = nodeMap.get(normalizeNodeId(lnk.to));
           if (!fromNode || !toNode) return null;
+          const isOffline = fromNode.status === 'OFFLINE' || toNode.status === 'OFFLINE';
           return {
             type: 'Feature',
             geometry: {
@@ -209,6 +258,7 @@ export default function Map3DView({
               to: lnk.to,
               distance_m: lnk.distance_m || 0,
               isActive: fromNode.status === 'ACTIVE' && toNode.status === 'ACTIVE',
+              isOffline: isOffline,
             },
           };
         })
@@ -304,8 +354,8 @@ export default function Map3DView({
     }
   }, []);
 
-  // ── Build Deck.gl 3D simulation layers (drones in the air) ───────────────
-  const buildLayers = useCallback((activeDrones = []) => {
+  // ── Build Deck.gl 3D simulation layers (drones in the air + SOS beacons) ──
+  const buildLayers = useCallback((activeDrones = [], sosData = sosAnimDataRef.current) => {
     const currentNodes = nodesRef.current;
     const currentSelected = selectedNodeRef.current;
 
@@ -379,15 +429,145 @@ export default function Map3DView({
       );
     }
 
+    // ── Real-time SOS telemetry visual overlays ──────────────────────────────
+    if (sosData) {
+      // 1. Origin pulsing beacon rings in priority color until delivery
+      if (sosData.originRings && sosData.originRings.length > 0) {
+        layers.push(
+          new ScatterplotLayer({
+            id: 'sos-origin-rings-layer',
+            data: sosData.originRings,
+            getPosition: (d) => [d.lon, d.lat, getTerrainAlt(d.lon, d.lat) + 3],
+            getRadius: (d) => d.radius,
+            radiusUnits: 'meters',
+            radiusMinPixels: 10,
+            radiusMaxPixels: 50,
+            filled: false,
+            stroked: true,
+            getLineColor: (d) => [...d.color, d.alpha],
+            getLineWidth: 2.5,
+            lineWidthUnits: 'pixels',
+            pickable: false,
+          }),
+        );
+      }
+
+      // 2. Gateway emerald delivered pulse rings
+      if (sosData.gatewayPulses && sosData.gatewayPulses.length > 0) {
+        layers.push(
+          new ScatterplotLayer({
+            id: 'sos-gateway-pulses-layer',
+            data: sosData.gatewayPulses,
+            getPosition: (d) => [d.lon, d.lat, getTerrainAlt(d.lon, d.lat) + 4],
+            getRadius: (d) => d.radius,
+            radiusUnits: 'meters',
+            radiusMinPixels: 12,
+            radiusMaxPixels: 64,
+            filled: false,
+            stroked: true,
+            getLineColor: (d) => [16, 185, 129, d.alpha],
+            getLineWidth: 3.5,
+            lineWidthUnits: 'pixels',
+            pickable: false,
+          }),
+        );
+      }
+
+      // 3. Fading comet trails behind active hopping packets
+      if (sosData.trails && sosData.trails.length > 0) {
+        layers.push(
+          new ScatterplotLayer({
+            id: 'sos-trails-layer',
+            data: sosData.trails,
+            getPosition: (d) => [d.lon, d.lat, getTerrainAlt(d.lon, d.lat) + 5],
+            getRadius: (d) => d.radius,
+            radiusUnits: 'meters',
+            radiusMinPixels: 3,
+            radiusMaxPixels: 18,
+            filled: true,
+            stroked: false,
+            getFillColor: (d) => [255, 107, 53, d.alpha],
+            pickable: false,
+          }),
+        );
+      }
+
+      // 4. Soft glowing halos around moving packet dots
+      if (sosData.activeDotsGlow && sosData.activeDotsGlow.length > 0) {
+        layers.push(
+          new ScatterplotLayer({
+            id: 'sos-active-dots-glow-layer',
+            data: sosData.activeDotsGlow,
+            getPosition: (d) => [d.lon, d.lat, getTerrainAlt(d.lon, d.lat) + 6],
+            getRadius: 22,
+            radiusUnits: 'meters',
+            radiusMinPixels: 12,
+            radiusMaxPixels: 45,
+            filled: true,
+            stroked: true,
+            getFillColor: [255, 107, 53, 65],
+            getLineColor: [255, 130, 70, 140],
+            getLineWidth: 1.5,
+            lineWidthUnits: 'pixels',
+            pickable: false,
+          }),
+        );
+      }
+
+      // 5. Active hopping glowing dots (#FF6B35)
+      if (sosData.activeDots && sosData.activeDots.length > 0) {
+        layers.push(
+          new ScatterplotLayer({
+            id: 'sos-active-dots-layer',
+            data: sosData.activeDots,
+            getPosition: (d) => [d.lon, d.lat, getTerrainAlt(d.lon, d.lat) + 7],
+            getRadius: 11,
+            radiusUnits: 'meters',
+            radiusMinPixels: 6,
+            radiusMaxPixels: 20,
+            filled: true,
+            stroked: true,
+            getFillColor: [255, 107, 53, 255],
+            getLineColor: [255, 255, 255, 255],
+            getLineWidth: 2,
+            lineWidthUnits: 'pixels',
+            pickable: false,
+          }),
+        );
+      }
+
+      // 6. Dropped packet fading red dots at failure node
+      if (sosData.droppedDots && sosData.droppedDots.length > 0) {
+        layers.push(
+          new ScatterplotLayer({
+            id: 'sos-dropped-dots-layer',
+            data: sosData.droppedDots,
+            getPosition: (d) => [d.lon, d.lat, getTerrainAlt(d.lon, d.lat) + 7],
+            getRadius: (d) => d.radius,
+            radiusUnits: 'meters',
+            radiusMinPixels: 8,
+            radiusMaxPixels: 30,
+            filled: true,
+            stroked: true,
+            getFillColor: (d) => [239, 68, 68, d.alpha],
+            getLineColor: (d) => [255, 255, 255, d.alpha],
+            getLineWidth: 2,
+            lineWidthUnits: 'pixels',
+            pickable: false,
+          }),
+        );
+      }
+    }
+
     return layers;
   }, [getTerrainAlt]);
 
   // Push updated layers to MapboxOverlay
   const renderDeckLayers = useCallback(
-    (drones = activeDronesRef.current) => {
+    (drones = activeDronesRef.current, sosData = sosAnimDataRef.current) => {
       const overlay = overlayRef.current;
       if (!overlay || !mapReadyRef.current) return;
-      overlay.setProps({ layers: buildLayers(drones) });
+      overlay.setProps({ layers: buildLayers(drones, sosData) });
     },
     [buildLayers],
   );
@@ -412,7 +592,6 @@ export default function Map3DView({
       projection: 'mercator',
     });
 
-    map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
     map.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-right');
 
     const overlay = new MapboxOverlay({
@@ -506,15 +685,17 @@ export default function Map3DView({
           source: 'coverage-circles-draped',
           paint: {
             'fill-color': [
-              'case',
-              ['==', ['get', 'status'], 'ACTIVE'],
-              '#34d399',
-              '#38bdf8',
+              'match',
+              ['get', 'status'],
+              'ACTIVE', '#10B981',
+              'OFFLINE', '#EF4444',
+              '#94A3B8',
             ],
             'fill-opacity': [
-              'case',
-              ['==', ['get', 'status'], 'ACTIVE'],
-              0.16,
+              'match',
+              ['get', 'status'],
+              'ACTIVE', 0.14,
+              'OFFLINE', 0.04,
               0.08,
             ],
           },
@@ -526,22 +707,29 @@ export default function Map3DView({
           source: 'coverage-circles-draped',
           paint: {
             'line-color': [
-              'case',
-              ['==', ['get', 'status'], 'ACTIVE'],
-              '#34d399',
-              '#38bdf8',
+              'match',
+              ['get', 'status'],
+              'ACTIVE', '#10B981',
+              'OFFLINE', '#EF4444',
+              '#94A3B8',
             ],
             'line-width': [
-              'case',
-              ['==', ['get', 'status'], 'ACTIVE'],
-              2,
+              'match',
+              ['get', 'status'],
+              'ACTIVE', 2,
+              'OFFLINE', 1.8,
               1.2,
             ],
-            'line-opacity': 0.8,
+            'line-opacity': [
+              'match',
+              ['get', 'status'],
+              'OFFLINE', 0.55,
+              0.75,
+            ],
             'line-dasharray': [
-              'case',
-              ['==', ['get', 'status'], 'ACTIVE'],
-              ['literal', [1, 0]],
+              'match',
+              ['get', 'status'],
+              'ACTIVE', ['literal', [1, 0]],
               ['literal', [4, 3]],
             ],
           },
@@ -555,33 +743,60 @@ export default function Map3DView({
           data: { type: 'FeatureCollection', features: [] },
         });
 
+        // Active / Live Links: Blue, solid
         map.addLayer({
           id: 'mesh-links-line-draped',
           type: 'line',
           source: 'mesh-links-draped',
+          filter: ['!=', ['get', 'isOffline'], true],
           paint: {
-            'line-color': [
-              'case',
-              ['get', 'isActive'],
-              '#34d399',
-              '#38bdf8',
-            ],
+            'line-color': '#3B82F6',
             'line-width': [
               'case',
               ['get', 'isActive'],
-              2.8,
+              2.5,
               1.8,
             ],
-            'line-opacity': 0.75,
+            'line-opacity': 0.65,
+          },
+        });
+
+        // Offline Links: Dashed and dimmed (gray, ~25% opacity)
+        map.addLayer({
+          id: 'mesh-links-offline-draped',
+          type: 'line',
+          source: 'mesh-links-draped',
+          filter: ['==', ['get', 'isOffline'], true],
+          paint: {
+            'line-color': '#9CA3AF',
+            'line-width': 1.8,
+            'line-opacity': 0.25,
+            'line-dasharray': [4, 4],
           },
         });
       }
 
-      // ── 3b. Shortest Path to Gateway (Draped Black Line) ─────────────────
+      // ── 3b. Shortest Path to Gateway (Draped Black Line with White Casing) ─
       if (!map.getSource('shortest-path-draped')) {
         map.addSource('shortest-path-draped', {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: [] },
+        });
+
+        // White casing underlay for high contrast on satellite imagery
+        map.addLayer({
+          id: 'shortest-path-casing-draped',
+          type: 'line',
+          source: 'shortest-path-draped',
+          paint: {
+            'line-color': '#ffffff',
+            'line-width': 7.5,
+            'line-opacity': 0.95,
+          },
+          layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+          },
         });
 
         map.addLayer({
@@ -589,9 +804,71 @@ export default function Map3DView({
           type: 'line',
           source: 'shortest-path-draped',
           paint: {
-            'line-color': '#000000',
-            'line-width': 5.5,
+            'line-color': '#18181B',
+            'line-width': 4.5,
             'line-opacity': 1.0,
+          },
+          layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+          },
+        });
+      }
+
+      // ── 3c. SOS Travelled Paths (Draped Orange Line with White Casing) ───
+      if (!map.getSource('sos-travelled-paths')) {
+        map.addSource('sos-travelled-paths', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
+
+        map.addLayer({
+          id: 'sos-travelled-paths-casing-draped',
+          type: 'line',
+          source: 'sos-travelled-paths',
+          paint: {
+            'line-color': '#ffffff',
+            'line-width': 7.5,
+            'line-opacity': ['coalesce', ['get', 'opacity'], 0.95],
+          },
+          layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+          },
+        });
+
+        map.addLayer({
+          id: 'sos-travelled-paths-line-draped',
+          type: 'line',
+          source: 'sos-travelled-paths',
+          paint: {
+            'line-color': '#FF6B35',
+            'line-width': 4.5,
+            'line-opacity': ['coalesce', ['get', 'opacity'], 1.0],
+          },
+          layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+          },
+        });
+      }
+
+      // ── 3d. SOS Failed Link Flash (Red Dashed Line) ──────────────────────
+      if (!map.getSource('sos-failed-links')) {
+        map.addSource('sos-failed-links', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
+
+        map.addLayer({
+          id: 'sos-failed-links-line-draped',
+          type: 'line',
+          source: 'sos-failed-links',
+          paint: {
+            'line-color': '#EF4444',
+            'line-width': 4.5,
+            'line-opacity': 0.95,
+            'line-dasharray': [3, 3],
           },
           layout: {
             'line-cap': 'round',
@@ -613,7 +890,7 @@ export default function Map3DView({
           source: 'gateway-draped',
           paint: {
             'circle-radius': 12,
-            'circle-color': '#f97316',
+            'circle-color': '#FF6B35',
             'circle-stroke-width': 3,
             'circle-stroke-color': '#ffffff',
             'circle-pitch-alignment': 'map',
@@ -632,8 +909,8 @@ export default function Map3DView({
             'text-allow-overlap': true,
           },
           paint: {
-            'text-color': '#fb923c',
-            'text-halo-color': '#0f172a',
+            'text-color': '#ffffff',
+            'text-halo-color': '#18181B',
             'text-halo-width': 2.5,
           },
         });
@@ -646,6 +923,27 @@ export default function Map3DView({
           data: { type: 'FeatureCollection', features: [] },
         });
 
+        // Outer red ring for OFFLINE nodes
+        map.addLayer({
+          id: 'node-pins-offline-ring-draped',
+          type: 'circle',
+          source: 'node-pins-draped',
+          filter: ['==', ['get', 'status'], 'OFFLINE'],
+          paint: {
+            'circle-radius': [
+              'case',
+              ['get', 'isSelected'],
+              16,
+              12.5,
+            ],
+            'circle-color': 'transparent',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#EF4444',
+            'circle-stroke-opacity': 0.85,
+            'circle-pitch-alignment': 'map',
+          },
+        });
+
         map.addLayer({
           id: 'node-pins-circle-draped',
           type: 'circle',
@@ -654,26 +952,26 @@ export default function Map3DView({
             'circle-radius': [
               'case',
               ['get', 'isSelected'],
-              11,
-              7.5,
+              12,
+              8.5,
             ],
             'circle-color': [
               'match',
               ['get', 'status'],
-              'ACTIVE', '#34d399',
-              'OFFLINE', '#f87171',
-              '#60a5fa',
+              'ACTIVE', '#10B981',
+              'OFFLINE', '#EF4444',
+              '#94A3B8',
             ],
             'circle-stroke-width': [
               'case',
               ['get', 'isSelected'],
-              3,
+              3.5,
               2,
             ],
             'circle-stroke-color': [
               'case',
               ['get', 'isSelected'],
-              '#facc15',
+              '#FF6B35',
               '#ffffff',
             ],
             'circle-pitch-alignment': 'map',
@@ -688,13 +986,13 @@ export default function Map3DView({
             'text-field': ['get', 'label'],
             'text-size': 10,
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-offset': [0, 1.4],
+            'text-offset': [0, 1.5],
             'text-allow-overlap': true,
           },
           paint: {
             'text-color': '#ffffff',
-            'text-halo-color': '#0f172a',
-            'text-halo-width': 2,
+            'text-halo-color': '#18181B',
+            'text-halo-width': 2.5,
           },
         });
       }
@@ -705,17 +1003,17 @@ export default function Map3DView({
         if (!e.features || !e.features[0]) return;
         const p = e.features[0].properties;
         const coords = e.features[0].geometry.coordinates.slice();
-        const col = p.status === 'ACTIVE' ? '#34d399' : '#60a5fa';
+        const col = p.status === 'ACTIVE' ? '#10B981' : p.status === 'OFFLINE' ? '#EF4444' : '#94A3B8';
 
         nodePopup
           .setLngLat(coords)
           .setHTML(`
-            <div style="font-family:Inter,system-ui,sans-serif;padding:8px 12px;background:#0f172af2;color:#f8fafc;border:1px solid #334155;border-radius:8px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
-              <div style="font-weight:700;font-size:13px;color:#38bdf8;margin-bottom:3px;">${p.id}</div>
-              <div>Status: <span style="font-weight:600;color:${col}">${p.status}</span></div>
-              <div>Altitude: <span style="color:#cbd5e1;">${p.altM || 25} m AGL</span></div>
-              <div>Wi-Fi Range: <span style="color:#cbd5e1;">${p.wifiRadiusM || 300} m</span></div>
-              <div style="font-size:10px;color:#94a3b8;margin-top:3px;">${coords[1].toFixed(5)}°N, ${coords[0].toFixed(5)}°E</div>
+            <div style="font-family:'Outfit',system-ui,sans-serif;padding:10px 14px;background:#18181Bf2;color:#f8fafc;border:1px solid #334155;border-radius:12px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+              <div style="font-weight:700;font-size:14px;color:#3B82F6;margin-bottom:4px;">${p.id}</div>
+              <div style="margin-bottom:2px;">Status: <span style="font-weight:700;color:${col}">${p.status}</span></div>
+              <div style="color:#cbd5e1;">Altitude: <strong>${p.altM || 25} m AGL</strong></div>
+              <div style="color:#cbd5e1;">Wi-Fi Range: <strong>${p.wifiRadiusM || 300} m</strong></div>
+              <div style="font-size:10px;color:#94a3b8;margin-top:4px;">${coords[1].toFixed(5)}°N, ${coords[0].toFixed(5)}°E</div>
             </div>
           `)
           .addTo(map);
@@ -772,6 +1070,9 @@ export default function Map3DView({
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+      }
+      if (sosAnimationRef.current) {
+        cancelAnimationFrame(sosAnimationRef.current);
       }
       nodePopup.remove();
       map.remove();
@@ -924,6 +1225,460 @@ export default function Map3DView({
     };
   }, [isSimulating, renderDeckLayers]);
 
+  // ── Trigger packet delivery visual feedback ──────────────────────────────
+  const triggerPacketDelivered = useCallback((pkt) => {
+    pkt.status = 'DELIVERED';
+    pkt.deliveredAt = Date.now();
+    pkt.fadeStartAt = Date.now() + 4000;
+    gatewayPulsesRef.current.push({
+      id: `${pkt.packetId}-gw-${Date.now()}`,
+      startTime: Date.now(),
+      durationMs: 1800,
+    });
+  }, []);
+
+  // ── Trigger packet dropped visual feedback ────────────────────────────────
+  const triggerPacketDropped = useCallback((pkt, atNode) => {
+    pkt.status = 'DROPPED';
+    pkt.isDropped = true;
+    pkt.droppedAt = Date.now();
+    pkt.droppedCoord = getNodeCoord(atNode) || pkt.lastKnownCoord;
+  }, [getNodeCoord]);
+
+  // ── Main SOS packet animation rAF loop ────────────────────────────────────
+  const startSosAnimationLoop = useCallback(() => {
+    if (sosAnimationRef.current) return;
+
+    const animateSos = () => {
+      const map = mapRef.current;
+      if (!map || !mapReadyRef.current) {
+        sosAnimationRef.current = requestAnimationFrame(animateSos);
+        return;
+      }
+
+      const now = performance.now();
+      const wallNow = Date.now();
+      const packets = Array.from(trackedSosPacketsRef.current.values());
+
+      let hasActiveWork = false;
+
+      // 1. Process each tracked SOS packet
+      packets.forEach((pkt) => {
+        // A. Start next hop if currently idle and queue has pending hops
+        if (!pkt.currentHop && pkt.hopQueue.length > 0) {
+          const hop = pkt.hopQueue.shift();
+          const fromCoord = pkt.lastKnownCoord || getNodeCoord(hop.from);
+          const toCoord = getNodeCoord(hop.to);
+          if (fromCoord && toCoord) {
+            pkt.currentHop = {
+              fromId: hop.from,
+              toId: hop.to,
+              fromCoord,
+              toCoord,
+              startTime: now,
+              durationMs: hop.durationMs || HOP_DURATION_MS,
+              progress: 0,
+              currentCoord: fromCoord,
+            };
+          }
+        }
+
+        // B. Animate currently active hop
+        if (pkt.currentHop) {
+          hasActiveWork = true;
+          const elapsed = now - pkt.currentHop.startTime;
+          const rawT = Math.min(1, elapsed / pkt.currentHop.durationMs);
+          const easedT = easeInOutCubic(rawT);
+
+          const fromC = pkt.currentHop.fromCoord;
+          const toC = pkt.currentHop.toCoord;
+
+          const currLon = fromC[0] + (toC[0] - fromC[0]) * easedT;
+          const currLat = fromC[1] + (toC[1] - fromC[1]) * easedT;
+          pkt.currentHop.progress = easedT;
+          pkt.currentHop.currentCoord = [currLon, currLat];
+          pkt.lastKnownCoord = [currLon, currLat];
+
+          if (rawT >= 1) {
+            // Hop completed!
+            pkt.completedCoords.push(toC);
+            pkt.lastKnownCoord = toC;
+            pkt.currentHop = null;
+
+            // Check if packet reached final delivery or drop
+            if (pkt.hopQueue.length === 0) {
+              if (pkt.pendingDelivered) {
+                triggerPacketDelivered(pkt);
+              } else if (pkt.pendingDropped) {
+                triggerPacketDropped(pkt, pkt.pendingDropped.atNode);
+              }
+            }
+          }
+        }
+
+        // C. Delivered packet 4-second hold then 1-second fadeout
+        if (pkt.status === 'DELIVERED') {
+          if (pkt.fadeStartAt) {
+            const timeSinceFadeStart = wallNow - pkt.fadeStartAt;
+            if (timeSinceFadeStart < (pkt.fadeDurationMs || 1000)) {
+              hasActiveWork = true;
+            } else {
+              trackedSosPacketsRef.current.delete(pkt.packetId);
+            }
+          } else {
+            hasActiveWork = true;
+          }
+        }
+
+        // D. Dropped packet 1.2-second fadeout
+        if (pkt.isDropped) {
+          if (wallNow - pkt.droppedAt < 1200) {
+            hasActiveWork = true;
+          } else {
+            trackedSosPacketsRef.current.delete(pkt.packetId);
+          }
+        }
+
+        // In-flight packets keep origin pulse ring active
+        if (pkt.status === 'IN_FLIGHT') {
+          hasActiveWork = true;
+        }
+      });
+
+      // 2. Filter expired failed links
+      failedSosLinksRef.current = failedSosLinksRef.current.filter((l) => {
+        return wallNow - l.startTime < l.durationMs;
+      });
+      if (failedSosLinksRef.current.length > 0) hasActiveWork = true;
+
+      // 3. Filter expired gateway pulses
+      gatewayPulsesRef.current = gatewayPulsesRef.current.filter((p) => {
+        return wallNow - p.startTime < p.durationMs;
+      });
+      if (gatewayPulsesRef.current.length > 0) hasActiveWork = true;
+
+      // 4. Update Mapbox GeoJSON sources (travelled paths and failed links)
+      const pathFeatures = [];
+      Array.from(trackedSosPacketsRef.current.values()).forEach((pkt) => {
+        const coords = [...pkt.completedCoords];
+        if (pkt.currentHop) {
+          coords.push(pkt.currentHop.currentCoord);
+        }
+        if (coords.length >= 2) {
+          let opacity = 1.0;
+          if (pkt.status === 'DELIVERED' && pkt.fadeStartAt && wallNow > pkt.fadeStartAt) {
+            const fadeProg = (wallNow - pkt.fadeStartAt) / (pkt.fadeDurationMs || 1000);
+            opacity = Math.max(0, 1 - fadeProg);
+          } else if (pkt.isDropped) {
+            const dropProg = Math.min(1, (wallNow - pkt.droppedAt) / 1200);
+            opacity = Math.max(0, 0.7 * (1 - dropProg));
+          }
+          pathFeatures.push({
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: coords,
+            },
+            properties: {
+              packetId: pkt.packetId,
+              opacity,
+            },
+          });
+        }
+      });
+
+      const pathsSrc = map.getSource('sos-travelled-paths');
+      if (pathsSrc) {
+        pathsSrc.setData({
+          type: 'FeatureCollection',
+          features: pathFeatures,
+        });
+      }
+
+      const failedFeatures = failedSosLinksRef.current.map((fl) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: fl.coords,
+        },
+        properties: {},
+      }));
+
+      const failedSrc = map.getSource('sos-failed-links');
+      if (failedSrc) {
+        failedSrc.setData({
+          type: 'FeatureCollection',
+          features: failedFeatures,
+        });
+      }
+
+      // 5. Build Deck.gl animation layers data
+      const originRings = [];
+      const activeDots = [];
+      const activeDotsGlow = [];
+      const trails = [];
+      const droppedDots = [];
+
+      Array.from(trackedSosPacketsRef.current.values()).forEach((pkt) => {
+        // Origin pulsing beacon ring in priority color until delivery
+        if (pkt.status === 'IN_FLIGHT') {
+          const originC = pkt.completedCoords[0];
+          if (originC) {
+            const pulsePhase = (wallNow % 1200) / 1200;
+            const pColor = PRIORITY_COLORS[pkt.priority] || PRIORITY_COLORS[4];
+            originRings.push({
+              id: `orig-${pkt.packetId}`,
+              lon: originC[0],
+              lat: originC[1],
+              radius: 14 + pulsePhase * 24,
+              alpha: Math.floor((1 - pulsePhase) * 220),
+              color: pColor,
+            });
+          }
+        }
+
+        // Active hopping glowing dot + soft glow + short fading trail
+        if (pkt.currentHop) {
+          const c = pkt.currentHop.currentCoord;
+          activeDots.push({ id: `dot-${pkt.packetId}`, lon: c[0], lat: c[1] });
+          activeDotsGlow.push({ id: `glow-${pkt.packetId}`, lon: c[0], lat: c[1] });
+
+          const fromC = pkt.currentHop.fromCoord;
+          const toC = pkt.currentHop.toCoord;
+          const currentEasedT = pkt.currentHop.progress;
+          const trailConfigs = [
+            { dt: 0.05, radius: 9, alpha: 180 },
+            { dt: 0.10, radius: 7, alpha: 130 },
+            { dt: 0.15, radius: 5, alpha: 80 },
+            { dt: 0.20, radius: 3.5, alpha: 40 },
+          ];
+
+          trailConfigs.forEach((cfg, idx) => {
+            const tT = Math.max(0, currentEasedT - cfg.dt);
+            const tLon = fromC[0] + (toC[0] - fromC[0]) * tT;
+            const tLat = fromC[1] + (toC[1] - fromC[1]) * tT;
+            trails.push({
+              id: `trail-${pkt.packetId}-${idx}`,
+              lon: tLon,
+              lat: tLat,
+              radius: cfg.radius,
+              alpha: cfg.alpha,
+            });
+          });
+        }
+
+        // Dropped fading red dot
+        if (pkt.isDropped && pkt.droppedCoord) {
+          const dropT = Math.min(1, (wallNow - pkt.droppedAt) / 1200);
+          droppedDots.push({
+            id: `drop-${pkt.packetId}`,
+            lon: pkt.droppedCoord[0],
+            lat: pkt.droppedCoord[1],
+            radius: 12 + dropT * 18,
+            alpha: Math.floor((1 - dropT) * 255),
+          });
+        }
+      });
+
+      // Gateway delivery emerald pulses
+      const gwRings = [];
+      const sideM = Math.sqrt(Math.max(0.1, Number(areaSqKmRef.current) || 4)) * 1000;
+      const defaultGateway = offsetToGps(centerLatRef.current, centerLonRef.current, 0, -sideM / 2);
+      const currentGw = gatewayRef.current || defaultGateway;
+
+      gatewayPulsesRef.current.forEach((gp) => {
+        const t = Math.min(1, (wallNow - gp.startTime) / gp.durationMs);
+        gwRings.push({
+          id: gp.id,
+          lon: currentGw.lon,
+          lat: currentGw.lat,
+          radius: 14 + t * 44,
+          alpha: Math.floor((1 - t) * 240),
+        });
+      });
+
+      sosAnimDataRef.current = {
+        originRings,
+        gatewayPulses: gwRings,
+        activeDots,
+        activeDotsGlow,
+        trails,
+        droppedDots,
+      };
+
+      // Push updated layers to Deck.gl overlay
+      renderDeckLayers(activeDronesRef.current, sosAnimDataRef.current);
+
+      if (hasActiveWork) {
+        sosAnimationRef.current = requestAnimationFrame(animateSos);
+      } else {
+        sosAnimationRef.current = null;
+      }
+    };
+
+    sosAnimationRef.current = requestAnimationFrame(animateSos);
+  }, [getNodeCoord, renderDeckLayers, triggerPacketDelivered, triggerPacketDropped]);
+
+  // ── Subscribe to real-time mesh events for SOS packet telemetry ───────────
+  useEffect(() => {
+    const unsubEmergency = subscribe('EMERGENCY_CREATED', (ev) => {
+      const pid = ev.packet_id || ev.packetId;
+      if (!pid) return;
+      const originCoord = getNodeCoord(ev.source);
+      if (!originCoord) return;
+
+      trackedSosPacketsRef.current.set(pid, {
+        packetId: pid,
+        source: normalizeNodeId(ev.source),
+        code: (ev.code || 'MED').toUpperCase(),
+        priority: ev.priority ?? 1,
+        status: 'IN_FLIGHT',
+        hopQueue: [],
+        currentHop: null,
+        lastKnownCoord: originCoord,
+        completedCoords: [originCoord],
+        deliveredAt: null,
+        fadeStartAt: null,
+        fadeDurationMs: 1000,
+        isDropped: false,
+        droppedAt: null,
+        droppedCoord: null,
+        pendingDelivered: false,
+        pendingDropped: null,
+      });
+
+      startSosAnimationLoop();
+    });
+
+    const unsubForwarded = subscribe('PACKET_FORWARDED', (ev) => {
+      const pid = ev.packet_id || ev.packetId;
+      if (!pid) return;
+      const pkt = trackedSosPacketsRef.current.get(pid);
+      if (!pkt) return; // Only animate packets announced by EMERGENCY_CREATED
+
+      const fromId = normalizeNodeId(ev.from);
+      const toId = normalizeNodeId(ev.to);
+      pkt.hopQueue.push({ from: fromId, to: toId, durationMs: HOP_DURATION_MS });
+
+      startSosAnimationLoop();
+    });
+
+    const unsubRerouted = subscribe('PACKET_REROUTED', (ev) => {
+      const pid = ev.packet_id || ev.packetId;
+      if (!pid) return;
+      const pkt = trackedSosPacketsRef.current.get(pid);
+      if (!pkt) return;
+
+      const atNodeId = normalizeNodeId(ev.at_node);
+      const failedHopId = normalizeNodeId(ev.failed_next_hop);
+      const c1 = getNodeCoord(atNodeId);
+      const c2 = getNodeCoord(failedHopId);
+
+      if (c1 && c2) {
+        failedSosLinksRef.current.push({
+          id: `${pid}-${Date.now()}`,
+          fromId: atNodeId,
+          toId: failedHopId,
+          coords: [c1, c2],
+          startTime: Date.now(),
+          durationMs: 2500,
+        });
+      }
+
+      startSosAnimationLoop();
+    });
+
+    const unsubDelivered = subscribe('PACKET_DELIVERED', (ev) => {
+      const pid = ev.packet_id || ev.packetId;
+      if (!pid) return;
+      const pkt = trackedSosPacketsRef.current.get(pid);
+      if (!pkt) return;
+
+      pkt.pendingDelivered = true;
+      if (!pkt.currentHop && pkt.hopQueue.length === 0) {
+        triggerPacketDelivered(pkt);
+      }
+
+      startSosAnimationLoop();
+    });
+
+    const unsubDropped = subscribe('PACKET_DROPPED', (ev) => {
+      const pid = ev.packet_id || ev.packetId;
+      if (!pid) return;
+      const pkt = trackedSosPacketsRef.current.get(pid);
+      if (!pkt) return;
+
+      pkt.pendingDropped = { atNode: normalizeNodeId(ev.at_node) };
+      if (!pkt.currentHop && pkt.hopQueue.length === 0) {
+        triggerPacketDropped(pkt, pkt.pendingDropped.atNode);
+      }
+
+      startSosAnimationLoop();
+    });
+
+    const handleReset = () => {
+      trackedSosPacketsRef.current.clear();
+      failedSosLinksRef.current = [];
+      gatewayPulsesRef.current = [];
+      sosAnimDataRef.current = {
+        originRings: [],
+        gatewayPulses: [],
+        activeDots: [],
+        activeDotsGlow: [],
+        trails: [],
+        droppedDots: [],
+      };
+      if (sosAnimationRef.current) {
+        cancelAnimationFrame(sosAnimationRef.current);
+        sosAnimationRef.current = null;
+      }
+      const map = mapRef.current;
+      if (map) {
+        const pSrc = map.getSource('sos-travelled-paths');
+        if (pSrc) pSrc.setData({ type: 'FeatureCollection', features: [] });
+        const fSrc = map.getSource('sos-failed-links');
+        if (fSrc) fSrc.setData({ type: 'FeatureCollection', features: [] });
+      }
+      renderDeckLayers();
+    };
+
+    window.addEventListener('sos:reset', handleReset);
+
+    return () => {
+      unsubEmergency();
+      unsubForwarded();
+      unsubRerouted();
+      unsubDelivered();
+      unsubDropped();
+      window.removeEventListener('sos:reset', handleReset);
+    };
+  }, [getNodeCoord, startSosAnimationLoop, triggerPacketDelivered, triggerPacketDropped, renderDeckLayers]);
+
+  // ── Focus camera on specific node ─────────────────────────────────────────
+  const handleFlyToNode = useCallback((nodeId) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const norm = normalizeNodeId(nodeId);
+    let coords = null;
+    if (norm === 'GATEWAY') {
+      const sideM = Math.sqrt(Math.max(0.1, Number(areaSqKmRef.current) || 4)) * 1000;
+      const defaultGateway = offsetToGps(centerLatRef.current, centerLonRef.current, 0, -sideM / 2);
+      const gw = gatewayRef.current || defaultGateway;
+      coords = [gw.lon, gw.lat];
+    } else {
+      const n = nodesRef.current.find((item) => normalizeNodeId(item.id) === norm);
+      if (n) coords = [n.lon, n.lat];
+    }
+    if (coords) {
+      map.flyTo({
+        center: coords,
+        zoom: 15.5,
+        duration: 1400,
+        essential: true,
+      });
+    }
+  }, []);
+
   // ── Camera control actions ────────────────────────────────────────────────
   const handleToggle3D = useCallback(() => {
     const map = mapRef.current;
@@ -959,6 +1714,24 @@ export default function Map3DView({
     map.rotateTo(0, { duration: 800 });
   }, []);
 
+  const handleZoomIn = useCallback(() => {
+    mapRef.current?.zoomIn();
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    mapRef.current?.zoomOut();
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    toggle3D: handleToggle3D,
+    focusArea: handleFocusArea,
+    resetNorth: handleResetNorth,
+    zoomIn: handleZoomIn,
+    zoomOut: handleZoomOut,
+    flyToNode: handleFlyToNode,
+    is3DMode,
+  }), [handleToggle3D, handleFocusArea, handleResetNorth, handleZoomIn, handleZoomOut, handleFlyToNode, is3DMode]);
+
   // ── Render container ─────────────────────────────────────────────────────
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -968,62 +1741,11 @@ export default function Map3DView({
           width: '100%',
           height: '100%',
           position: 'relative',
-          borderRadius: '12px',
           overflow: 'hidden',
         }}
       />
-
-      {/* Floating View Controls Toolbar */}
-      <div className="map-toolbar">
-        <button
-          type="button"
-          className={`map-toolbar__btn ${is3DMode ? 'map-toolbar__btn--active' : ''}`}
-          onClick={handleToggle3D}
-          title="Toggle 3D Perspective / 2D Top-Down"
-        >
-          {is3DMode ? '🏔 3D View' : '🗺 2D Top-Down'}
-        </button>
-        <button
-          type="button"
-          className="map-toolbar__btn"
-          onClick={handleFocusArea}
-          title="Recenter camera on disaster boundary"
-        >
-          🎯 Focus Area
-        </button>
-        <button
-          type="button"
-          className="map-toolbar__btn"
-          onClick={handleResetNorth}
-          title="Reset camera heading to North"
-        >
-          🧭 North
-        </button>
-      </div>
-
-      {/* Map Legend Overlay */}
-      <div className="map-legend">
-        <div className="map-legend__item">
-          <span className="map-legend__box" style={{ borderColor: '#06b6d4', background: 'rgba(139,92,246,0.25)' }} />
-          <span>Disaster Zone ({Number(areaSqKm).toFixed(1)} km²)</span>
-        </div>
-        <div className="map-legend__item">
-          <span className="map-legend__dot" style={{ background: '#60a5fa' }} />
-          <span>Nodes ({nodes.length})</span>
-        </div>
-        <div className="map-legend__item">
-          <span className="map-legend__dot" style={{ background: '#f97316' }} />
-          <span>Gateway Base Station</span>
-        </div>
-        <div className="map-legend__item">
-          <span className="map-legend__ring" style={{ borderColor: '#38bdf8' }} />
-          <span>Wi-Fi Hotspot Radius</span>
-        </div>
-        <div className="map-legend__item">
-          <span className="map-legend__line" style={{ background: '#38bdf8' }} />
-          <span>LoRa Mesh Links</span>
-        </div>
-      </div>
     </div>
   );
-}
+});
+
+export default Map3DView;

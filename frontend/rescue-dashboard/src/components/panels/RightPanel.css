@@ -1,0 +1,293 @@
+.disha-right-panel {
+  position: relative;
+  width: 380px;
+  height: calc(100vh - 112px);
+  border-radius: 32px;
+  z-index: 40;
+  pointer-events: auto;
+  user-select: none;
+  transition: width var(--transition-normal);
+}
+
+.disha-right-panel.is-collapsed {
+  width: 0;
+}
+
+/* Collapse Toggle Tab: 16px from viewport edge when collapsed, vertically aligned at top: 16px */
+.disha-right-panel__toggle {
+  position: absolute;
+  top: 16px;
+  left: -18px;
+  right: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: #FFFFFF;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  color: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 45;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+/* When collapsed, position 16px from viewport edge (right: 0 inside 16px overlay margin) */
+.disha-right-panel.is-collapsed .disha-right-panel__toggle {
+  left: auto;
+  right: 0;
+}
+
+.disha-right-panel__toggle:hover {
+  background: var(--color-white);
+  color: var(--color-primary);
+  transform: scale(1.08);
+}
+
+.disha-right-panel__content {
+  width: 380px;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 32px !important;
+  background: var(--color-surface-solid) !important;
+  border: 1px solid var(--color-border-card) !important;
+  box-shadow: var(--shadow-card) !important;
+  position: relative;
+}
+
+/* Subtle scroll fade overlay at bottom */
+.disha-right-panel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border-bottom-left-radius: 32px;
+  border-bottom-right-radius: 32px;
+  pointer-events: none;
+  z-index: 42;
+}
+
+.disha-right-panel.is-collapsed::after {
+  display: none;
+}
+
+.disha-right-panel__header {
+  margin-bottom: var(--space-3);
+}
+
+.disha-right-panel__title {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-h3);
+  font-weight: 700;
+  color: var(--color-dark);
+}
+
+.disha-right-panel__subtitle {
+  margin: 2px 0 0 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.disha-right-panel__tabs-wrapper {
+  margin-bottom: var(--space-4);
+  display: flex;
+  justify-content: center;
+}
+
+.disha-right-panel__tabs-wrapper .disha-segmented-tabs {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.disha-right-panel__tabs-wrapper .disha-tab-btn {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.disha-right-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+  padding-bottom: 56px; /* 24px bottom padding + safe zone clearance */
+}
+
+/* Sample DEV SOS Card */
+.disha-sample-sos-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: #ffffff;
+  border: 1px solid rgba(255, 107, 53, 0.25);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 10px rgba(255, 107, 53, 0.08);
+  margin-bottom: var(--space-4);
+}
+
+.disha-sample-sos-card__rank-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 107, 53, 0.15);
+  color: var(--color-accent);
+  font-family: var(--font-family);
+  font-size: var(--font-size-small);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.disha-sample-sos-card__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.disha-sample-sos-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.disha-sample-sos-card__tags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.disha-sample-sos-card__people {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-family);
+  font-size: var(--font-size-tiny);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.disha-sample-sos-card__middle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.disha-sample-sos-card__source {
+  font-family: var(--font-family);
+  font-size: var(--font-size-tiny);
+  color: var(--color-text-muted);
+}
+
+.disha-sample-sos-card__source strong {
+  color: var(--color-text-main);
+}
+
+.disha-sample-sos-card__note {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-small);
+  font-weight: 500;
+  color: var(--color-dark);
+  line-height: 1.35;
+}
+
+.disha-sample-sos-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px dashed var(--color-border);
+  font-family: var(--font-family);
+  font-size: var(--font-size-tiny);
+  color: var(--color-text-muted);
+}
+
+.disha-sample-sos-card__time {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.disha-sample-sos-card__hops {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* SOS Card Interactive & Animation Styles */
+.disha-sos-card {
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  animation: dishaSosSlideIn 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.disha-sos-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.16);
+}
+
+.disha-sos-card:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.disha-sos-card__rerouted {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-full);
+  color: #D97706;
+  font-family: var(--font-family);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+@keyframes dishaSosSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dishaDeliveredFlash {
+  0% {
+    background-color: #ECFDF5;
+    border-color: #10B981;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    background-color: #F0FDF4;
+    border-color: #34D399;
+  }
+  100% {
+    background-color: #FFFFFF;
+    border-color: rgba(255, 107, 53, 0.25);
+    box-shadow: 0 2px 10px rgba(255, 107, 53, 0.08);
+  }
+}
+
+.disha-sos-card.is-delivered-flash {
+  animation: dishaDeliveredFlash 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

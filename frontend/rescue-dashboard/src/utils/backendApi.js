@@ -154,6 +154,31 @@ export async function sendEmergency({ source, type, message }) {
 }
 
 /**
+ * POST /sos — Send an SOS distress call from a node.
+ *
+ * @param {{ source: string, code: string, people?: number, note?: string, sourceKind?: string }} params
+ * @returns {Promise<object|null>}
+ */
+export async function sendSos({ source, code, people = 1, note = '', sourceKind = 'dashboard' }) {
+  return postJSON('/sos', {
+    source,
+    code,
+    people,
+    note: note || `Dashboard SOS (${code})`,
+    source_kind: sourceKind,
+  });
+}
+
+/**
+ * GET /sos — Fetch all emergencies ranked by priority.
+ *
+ * @returns {Promise<Array|null>}
+ */
+export async function fetchSos() {
+  return getJSON('/sos');
+}
+
+/**
  * POST /simulation/kill/:nodeId — Kill a node in the running simulation.
  *
  * @param {string} nodeId

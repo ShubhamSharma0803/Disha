@@ -123,5 +123,129 @@ def test_websocket_emergency_delivery():
             assert "NODE-01" in delivered_event["route"]
 
 
+def test_sos_invalid_code_returns_422():
+    with TestClient(app) as client:
+        # Invalid code on /simulation/emergency
+        res1 = client.post("/simulation/emergency", json={
+            "source": "NODE-01",
+            "code": "INVALID_CODE",
+        })
+        assert res1.status_code == 422
+
+        # Invalid code on /sos alias
+        res2 = client.post("/sos", json={
+            "source": "NODE-01",
+            "code": "BADCODE",
+        })
+        assert res2.status_code == 422
+
+        # Invalid people count (e.g. 0 or 10)
+        res3 = client.post("/sos", json={
+            "source": "NODE-01",
+            "code": "MED",
+            "people": 0,
+        })
+        assert res3.status_code == 422
+
+        # Note exceeding 40 chars
+        res4 = client.post("/sos", json={
+            "source": "NODE-01",
+            "code": "MED",
+            "note": "X" * 45,
+        })
+        assert res4.status_code == 422
+
+
+def test_sos_delivery_and_fields_intact():
+    with TestClient(app) as client:
+        # Ensure simulation is started
+        res_start = client.post("/simulation/start")
+        assert res_start.status_code == 200
+
+        with client.websocket_connect("/ws/events") as ws:
+            # Originate emergency via /sos alias
+            res_sos = client.post("/sos", json={
+                "source": "NODE-01",
+                "code": "MED",
+                "people": 3,
+                "note": "Broken arm at node 1",
+                "source_kind": "hardware",
+            })
+            assert res_sos.status_code == 200
+            sos_data = res_sos.json()
+            assert sos_data["status"] == "originated"
+            assert sos_data["code"] == "MED"
+            assert sos_data["priority"] == 1
+            assert sos_data["people"] == 3
+            assert sos_data["note"] == "Broken arm at node 1"
+            assert sos_data["source_kind"] == "hardware"
+            target_pkt_id = sos_data["packet_id"]
+
+            # Listen for PACKET_DELIVERED event on websocket
+            delivered_event = None
+            for _ in range(30):
+                data = ws.receive_json()
+                if (
+                    data.get("event") == "PACKET_DELIVERED"
+                    and data.get("packet_id") == target_pkt_id
+                ):
+                    delivered_event = data
+                    break
+
+            assert delivered_event is not None, f"Expected PACKET_DELIVERED for {target_pkt_id}"
+            assert delivered_event["type"] == "PACKET_DELIVERED"
+            assert delivered_event["code"] == "MED"
+            assert delivered_event["priority"] == 1
+            assert delivered_event["people"] == 3
+            assert delivered_event["note"] == "Broken arm at node 1"
+            assert delivered_event["source_kind"] == "hardware"
+            assert "route" in delivered_event
+            assert "GATEWAY" in delivered_event["route"]
+            assert delivered_event["hop_count"] >= 1
+
+        # Check GET /simulation/sos
+        res_sos_list = client.get("/simulation/sos")
+        assert res_sos_list.status_code == 200
+        items = res_sos_list.json()
+        assert isinstance(items, list)
+        matching = [e for e in items if e["packet_id"] == target_pkt_id]
+        assert len(matching) == 1
+        item = matching[0]
+        assert item["status"] == "DELIVERED"
+        assert item["code"] == "MED"
+        assert item["priority"] == 1
+        assert item["people"] == 3
+        assert item["note"] == "Broken arm at node 1"
+        assert item["source_kind"] == "hardware"
+
+
+def test_simulation_sos_ranking():
+    with TestClient(app) as client:
+        # Restart simulation to clear tracker
+        client.post("/simulation/start")
+
+        # Originate 4 emergencies with different priority, people, and codes:
+        # 1. SAF (code SAF -> priority 4, people 1)
+        # 2. FWD (code FWD -> priority 3, people 5)
+        # 3. MIS (code MIS -> priority 2, people 1)
+        # 4. MED (code MED -> priority 1, people 2)
+        # 5. TRP (code TRP -> priority 1, people 7)
+        client.post("/sos", json={"source": "NODE-01", "code": "SAF", "people": 1, "note": "safe"})
+        client.post("/sos", json={"source": "NODE-01", "code": "FWD", "people": 5, "note": "food"})
+        client.post("/sos", json={"source": "NODE-01", "code": "MIS", "people": 1, "note": "missing"})
+        client.post("/sos", json={"source": "NODE-01", "code": "MED", "people": 2, "note": "medical"})
+        client.post("/sos", json={"source": "NODE-01", "code": "TRP", "people": 7, "note": "trapped"})
+
+        res = client.get("/simulation/sos")
+        assert res.status_code == 200
+        items = res.json()
+        assert len(items) >= 5
+
+        # Check ranking: priority asc, people desc, created_at asc
+        codes_ranked = [i["code"] for i in items[:5]]
+        assert codes_ranked == ["TRP", "MED", "MIS", "FWD", "SAF"]
+
+
 if __name__ == "__main__":
     pytest.main(["-v", __file__])
+

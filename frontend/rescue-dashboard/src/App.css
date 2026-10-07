@@ -1,137 +1,192 @@
-/* ─── App Layout ─────────────────────────────────────────────────────────── */
-/* Full-viewport, sidebar-left + map-right layout                            */
+/* ─── Disha Product UI - App Root Layout ──────────────────────────────────── */
 
-.app {
-  display: flex;
+.disha-app {
+  position: relative;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #0a0f1e;
+  background-color: var(--color-bg);
+  font-family: var(--font-family);
+  color: var(--color-text-main);
+  user-select: none;
 }
 
-.app__map {
-  flex: 1 1 0;
-  position: relative;
-  min-width: 0;
-}
-
-/* ── Floating Map Toolbar ────────────────────────────────────────────────── */
-
-.map-toolbar {
+/* Map canvas fills 100% of the viewport behind UI */
+.disha-app__map-canvas {
   position: absolute;
-  top: 18px;
-  left: 18px;
-  z-index: 10;
-  display: flex;
-  gap: 8px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  padding: 6px 8px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
-.map-toolbar__btn {
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  color: #cbd5e1;
-  font-size: 11.5px;
-  font-weight: 600;
-  font-family: 'Inter', system-ui, sans-serif;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.map-toolbar__btn:hover {
-  background: rgba(51, 65, 85, 0.9);
-  color: #ffffff;
-  border-color: rgba(99, 102, 241, 0.4);
-}
-
-.map-toolbar__btn--active {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(139, 92, 246, 0.4));
-  border-color: #6366f1;
-  color: #e0e7ff;
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
-}
-
-/* ── Map Legend Overlay ──────────────────────────────────────────────────── */
-
-.map-legend {
+/* Floating overlay container with 16px margins */
+.disha-app__overlay {
   position: absolute;
-  bottom: 24px;
-  left: 18px;
+  inset: 0;
   z-index: 10;
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  padding: var(--space-4); /* 16px margins */
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
-  color: #94a3b8;
-  pointer-events: none;
+  gap: var(--space-4);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
-.map-legend__item {
+/* Main workspace area holding LeftPanel, CenterControls, RightPanel */
+.disha-app__workspace {
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
+  gap: var(--space-4);
+  min-height: 0;
+  width: 100%;
+  pointer-events: none;
+  position: relative;
 }
 
-.map-legend__box {
-  width: 14px;
-  height: 10px;
-  border-radius: 2px;
-  border: 1.5px solid #06b6d4;
-  display: inline-block;
+/* Central overlay above map between left & right panels */
+.disha-app__center-controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  height: 100%;
+  pointer-events: none;
+  position: relative;
 }
 
-.map-legend__dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  display: inline-block;
-  box-shadow: 0 0 6px currentColor;
+/* MapToolbar placed at top-left of the visible map area */
+.disha-app__toolbar-wrapper {
+  display: flex;
+  justify-content: flex-start;
+  pointer-events: none;
+  z-index: 25;
+  margin-top: 2px;
 }
 
-.map-legend__ring {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 1.5px dashed #38bdf8;
-  display: inline-block;
+/* Bottom row holding Legend on bottom-left and DemoBar centered, above 44px safe zone */
+.disha-app__bottom-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: 48px; /* Safe zone: keeps controls >= 44px clear of Mapbox attribution */
+  pointer-events: none;
+  z-index: 20;
+  box-sizing: border-box;
+  gap: 16px;
+  position: relative;
 }
 
-.map-legend__line {
-  width: 14px;
-  height: 2px;
-  border-radius: 1px;
-  display: inline-block;
+.disha-app__legend-wrapper {
+  flex-shrink: 0;
+  pointer-events: auto;
+  z-index: 20;
 }
 
-/* ── Mapbox Popups ───────────────────────────────────────────────────────── */
+.disha-app__demobar-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  margin-left: 16px;
+  pointer-events: auto;
+  z-index: 20;
+}
 
+/* Mapbox Popup Overrides for Disha Product UI */
 .mapboxgl-popup-content {
   background: transparent !important;
   padding: 0 !important;
   box-shadow: none !important;
-  border-radius: 8px !important;
+  border-radius: var(--radius-md) !important;
 }
 
 .mapboxgl-popup-tip {
-  border-top-color: #0f172af2 !important;
+  border-top-color: #18181Bf2 !important;
+}
+
+/* Mapbox Scale Control & Attribution Controls - elevated above safe zone */
+.mapboxgl-ctrl-bottom-right {
+  bottom: 56px !important; /* Above bottom safe zone (48px) and never under DemoBar */
+  right: 412px !important;
+  z-index: 15 !important;
+  transition: all var(--transition-normal);
+}
+
+.mapboxgl-ctrl-scale {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(17, 24, 39, 0.15) !important;
+  color: #111827 !important;
+  font-family: var(--font-family) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 4px !important;
+  padding: 0 4px !important;
+}
+
+.mapboxgl-ctrl-attrib {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-radius: 6px !important;
+  padding: 2px 8px !important;
+  font-size: 10px !important;
+  border: 1px solid rgba(17, 24, 39, 0.08) !important;
+}
+
+/* Global Focus-Visible Styling: 2px blue ring following element radius, no mouse click outlines */
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+.disha-left-panel__toggle:focus-visible,
+.disha-right-panel__toggle:focus-visible,
+.disha-legend-pill-btn:focus-visible,
+.disha-map-toolbar__btn:focus-visible,
+.disha-map-toolbar__chip:focus-visible {
+  outline: 2px solid #3B82F6 !important;
+  outline-offset: 2px !important;
+}
+
+/* Toast Notification */
+.disha-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  padding: 12px 20px;
+  background: #FFFFFF;
+  border-radius: var(--radius-sm, 12px);
+  border-left: 4px solid var(--color-danger, #EF4444);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-main, #111827);
+  pointer-events: auto;
+  user-select: none;
+  animation: dishaToastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dishaToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

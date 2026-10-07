@@ -1,0 +1,176 @@
+.disha-legend-wrapper {
+  z-index: 20;
+  pointer-events: auto;
+  user-select: none;
+}
+
+/* Collapsed Pill Button */
+.disha-legend-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--color-surface-solid);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-family);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  color: #111827;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.disha-legend-pill-btn:hover {
+  background: #FFFFFF;
+  color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-elevated);
+}
+
+/* Expanded Solid Card */
+.disha-legend-card {
+  width: 300px;
+  max-width: 320px;
+  padding: 12px 14px;
+  background: var(--color-surface-solid);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border-card);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.disha-legend-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.disha-legend-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.disha-legend-card__header-icon {
+  color: #2563EB;
+}
+
+.disha-legend-card__title {
+  font-family: var(--font-family);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  color: #111827;
+}
+
+.disha-legend-card__close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: none;
+  background: #F3F4F6;
+  color: #4B5563;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.disha-legend-card__close-btn:hover {
+  background: #E5E7EB;
+  color: #111827;
+}
+
+/* 2-Column Grid */
+.disha-legend-card__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 12px;
+}
+
+.disha-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.disha-legend-label {
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+}
+
+/* Indicators */
+.disha-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.disha-legend-dot--active {
+  background: var(--color-success);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.disha-legend-dot--planned {
+  background: #94A3B8;
+  border: 1.5px dashed #ffffff;
+}
+
+.disha-legend-dot--offline {
+  background: var(--color-danger);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+.disha-legend-dot--gateway {
+  background: var(--color-accent);
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 6px rgba(255, 107, 53, 0.4);
+}
+
+.disha-legend-line {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.disha-legend-line--mesh {
+  background: var(--color-primary);
+  opacity: 0.85;
+}
+
+.disha-legend-line--path {
+  background: #18181B;
+  box-shadow: 0 0 0 1px #ffffff;
+}
+
+.disha-legend-ring {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-success);
+  background: rgba(16, 185, 129, 0.15);
+  flex-shrink: 0;
+}
+
+.disha-legend-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1.5px solid #06b6d4;
+  background: rgba(139, 92, 246, 0.15);
+  flex-shrink: 0;
+}
