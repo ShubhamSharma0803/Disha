@@ -227,3 +227,18 @@ export async function isBackendOnline() {
   const data = await getJSON('/');
   return data?.status === 'ok';
 }
+
+/**
+ * GET /gateway/status — Check hardware bridge connection state.
+ *
+ * Returns an object like:
+ * { mode: "simulated"|"mock"|"live", connected: bool, port: string|null,
+ *   last_packet_ts: string|null, packets_received: int, packets_ignored: int }
+ *
+ * Returns null if the backend is unreachable.
+ *
+ * @returns {Promise<object|null>}
+ */
+export async function fetchGatewayStatus() {
+  return getJSON('/gateway/status');
+}

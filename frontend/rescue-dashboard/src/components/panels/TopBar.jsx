@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, RefreshCw } from 'lucide-react';
+import { Radio, RefreshCw, Usb } from 'lucide-react';
 import SegmentedTabs from '../ui/SegmentedTabs';
 import Pill from '../ui/Pill';
 import Button from '../ui/Button';
@@ -19,7 +19,11 @@ export default function TopBar({
   backendLoading = false,
   connectionState = 'reconnecting',
   onRefresh,
+  gatewayStatus = null,
 }) {
+  const isLiveUSB = gatewayStatus && gatewayStatus.mode === 'live' && gatewayStatus.connected;
+  const isMockBridge = gatewayStatus && gatewayStatus.mode === 'mock' && gatewayStatus.connected;
+
   return (
     <header className="disha-topbar">
       {/* Left: Brand Wordmark */}
@@ -44,8 +48,21 @@ export default function TopBar({
         />
       </nav>
 
-      {/* Right: Backend Status Pill & 40px Refresh Icon Button */}
+      {/* Right: Gateway Status + Backend Status Pill & 40px Refresh Icon Button */}
       <div className="disha-topbar__actions">
+        {/* Hardware Bridge Indicator */}
+        {isLiveUSB && (
+          <Pill variant="success" dot={true} pulse={true}>
+            <Usb size={12} style={{ marginRight: 4 }} />
+            LIVE USB
+          </Pill>
+        )}
+        {isMockBridge && (
+          <Pill variant="warning" dot={true}>
+            MOCK BRIDGE
+          </Pill>
+        )}
+
         <Pill
           variant={
             backendLoading

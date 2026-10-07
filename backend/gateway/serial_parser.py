@@ -52,6 +52,64 @@ def parse_line(raw: str) -> Optional[Dict[str, Any]]:
     if not isinstance(obj, dict):
         return None
 
+    # Check for event format from Node 2 (e.g. {"event":"SOS_RX", ...})
+    ev = obj.get("event")
+    if isinstance(ev, str):
+        ev = ev.upper()
+        if ev == "SOS_RX":
+            payload = str(obj.get("payload", ""))
+            parts = payload.split("|")
+            source_node = parts[1] if len(parts) > 1 and parts[1] else str(obj.get("node_id", "NODE-01"))
+            cat = parts[2].upper() if len(parts) > 2 and parts[2].upper() in _VALID_CATS else _DEFAULT_CAT
+            n = _clamp(parts[3] if len(parts) > 3 else 1, 1, 9, 1)
+            note = parts[4] if len(parts) > 4 else ""
+            try:
+                lat = float(obj.get("lat", 30.3256))
+                lon = float(obj.get("lon", 77.9423))
+            except (TypeError, ValueError):
+                lat, lon = 30.3256, 77.9423
+
+            return {
+                "kind": "SOS",
+                "node": source_node,
+                "cat": cat,
+                "n": n,
+                "note": note,
+                "lat": lat,
+                "lon": lon,
+                "bat": _clamp(obj.get("bat"), 0, 100, -1),
+                "timestamp": _now_iso(),
+                "source_kind": "hardware",
+            }
+
+        elif ev == "SEARCH_OBSERVATION":
+            dev = obj.get("device_hash") or obj.get("dev")
+            if not dev:
+                return None
+            try:
+                rssi = int(obj["rssi"])
+            except (KeyError, TypeError, ValueError):
+                return None
+            return {
+                "kind": "SNF",
+                "node": str(obj.get("node_id", obj.get("node", "NODE-02"))),
+                "dev": str(dev),
+                "rssi": rssi,
+                "ch": _clamp(obj.get("channel", obj.get("ch")), 1, 13, 0) or None,
+                "bat": _clamp(obj.get("bat"), 0, 100, -1),
+                "timestamp": _now_iso(),
+                "source_kind": "hardware",
+            }
+
+        elif ev == "HB":
+            return {
+                "kind": "HB",
+                "node": str(obj.get("node_id", obj.get("node", "NODE-01"))),
+                "bat": _clamp(obj.get("bat"), 0, 100, -1),
+                "timestamp": _now_iso(),
+                "source_kind": "hardware",
+            }
+
     t = obj.get("t")
     if not isinstance(t, str):
         return None

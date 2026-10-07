@@ -133,7 +133,7 @@ class TestUnknownNodeSOS:
         finally:
             ev_bus.unregister(_capture)
 
-    def test_sos_missing_lat_returns_422(self):
+    def test_sos_missing_lat_uses_default(self):
         _reset_gw_state()
         with TestClient(app) as client:
             payload = {
@@ -146,7 +146,10 @@ class TestUnknownNodeSOS:
                 "source_kind": "hardware",
             }
             res = client.post("/bridge/ingest", json=payload)
-            assert res.status_code == 422
+            assert res.status_code == 200
+            data = res.json()
+            assert data["status"] == "ok"
+            assert data["packet_id"].startswith("PKT-HW-")
 
     def test_snf_from_unknown_node_ok(self):
         _reset_gw_state()

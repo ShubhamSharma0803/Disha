@@ -15,6 +15,7 @@ import {
   killNode,
   reviveNode,
   fetchSos,
+  fetchGatewayStatus,
 } from './utils/backendApi';
 import { normalizeNodeId } from './utils/nodeUtils';
 import { useMeshEvents } from './hooks/useMeshEvents';
@@ -52,6 +53,7 @@ function App() {
   const [deploymentPlan, setDeploymentPlan] = useState(null);
   const [backendLoading, setBackendLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [gatewayStatus, setGatewayStatus] = useState(null);
 
   const debounceTimerRef = useRef(null);
   const mapActionsRef = useRef(null);
@@ -84,10 +86,14 @@ function App() {
     const runCheck = async () => {
       const online = await isBackendOnline();
       if (!cancelled) setBackendOnline(online);
+
+      // Also poll gateway/bridge status
+      const gw = await fetchGatewayStatus();
+      if (!cancelled) setGatewayStatus(gw);
     };
 
     runCheck();
-    const interval = setInterval(runCheck, 15000);
+    const interval = setInterval(runCheck, 5000);
 
     return () => {
       cancelled = true;
@@ -391,6 +397,7 @@ function App() {
           backendLoading={backendLoading}
           connectionState={connectionState}
           onRefresh={checkHealth}
+          gatewayStatus={gatewayStatus}
         />
 
         {/* Floating Reroute / Dropped notification banner under TopBar */}

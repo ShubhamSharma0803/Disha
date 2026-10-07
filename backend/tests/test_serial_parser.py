@@ -165,3 +165,42 @@ class TestHB:
         raw = _line({"t": "HB", "node": "HW-01", "bat": 150})
         r = parse_line(raw)
         assert r["bat"] == 100
+
+
+# ---------------------------------------------------------------------------
+# Node 2 Event Format
+# ---------------------------------------------------------------------------
+
+class TestNode2Format:
+    def test_sos_rx_event(self):
+        raw = '{"event":"SOS_RX","node_id":"NODE-02","payload":"SOS|NODE-01|TRP|3|Need rescue floor 2","ms":1234}\n'
+        r = parse_line(raw)
+        assert r is not None
+        assert r["kind"] == "SOS"
+        assert r["node"] == "NODE-01"
+        assert r["cat"] == "TRP"
+        assert r["n"] == 3
+        assert r["note"] == "Need rescue floor 2"
+        assert r["source_kind"] == "hardware"
+        assert r["lat"] == 30.3256
+        assert r["lon"] == 77.9423
+
+    def test_search_observation_event(self):
+        raw = '{"event":"SEARCH_OBSERVATION","node_id":"NODE-02","device_hash":"A1B2C3D4","rssi":-68,"channel":1,"rand":1,"ms":5678}\n'
+        r = parse_line(raw)
+        assert r is not None
+        assert r["kind"] == "SNF"
+        assert r["node"] == "NODE-02"
+        assert r["dev"] == "A1B2C3D4"
+        assert r["rssi"] == -68
+        assert r["ch"] == 1
+        assert r["source_kind"] == "hardware"
+
+    def test_hb_event(self):
+        raw = '{"event":"HB","node_id":"NODE-01","ms":9999}\n'
+        r = parse_line(raw)
+        assert r is not None
+        assert r["kind"] == "HB"
+        assert r["node"] == "NODE-01"
+        assert r["source_kind"] == "hardware"
+

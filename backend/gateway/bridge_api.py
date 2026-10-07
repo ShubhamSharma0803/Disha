@@ -135,16 +135,20 @@ async def bridge_ingest(body: Dict[str, Any]):
         n = max(1, min(9, int(body.get("n", 1))))
         bat = body.get("bat", -1)
 
+        # Default to Dehradun coordinates when hardware node has no GPS
         try:
             lat = float(body["lat"])
+        except (KeyError, TypeError, ValueError):
+            lat = 30.3256
+        try:
             lon = float(body["lon"])
         except (KeyError, TypeError, ValueError):
-            raise HTTPException(status_code=422, detail="lat and lon are required for SOS")
+            lon = 77.9423
 
         priority = _CAT_PRIORITY.get(cat, 4)
         ptype = _CAT_TYPE.get(cat, "OTHER")
         packet_id = f"PKT-HW-{uuid.uuid4().hex[:8].upper()}"
-        note = f"HW node {node} bat={bat}%"
+        note = body.get("note") or f"HW node {node} bat={bat}%"
 
         sos_tracker.record_emergency(
             packet_id=packet_id,
