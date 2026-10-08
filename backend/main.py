@@ -22,6 +22,11 @@ except ImportError:
 from backend.simulation.api import router as simulation_router
 from backend.gateway.bridge_api import router as bridge_router
 
+try:
+    from hardware.backend import router as hardware_router
+except ImportError:
+    hardware_router = None
+
 app = FastAPI(
     title="Disha - Emergency Communication & Rescue Network API",
     description="Backend API providing deployment planning, mesh coordination, and drone telemetry.",
@@ -45,6 +50,8 @@ app.add_middleware(
 
 app.include_router(simulation_router)
 app.include_router(bridge_router)
+if hardware_router is not None:
+    app.include_router(hardware_router)
 
 
 class RestrictedZone(BaseModel):

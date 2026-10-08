@@ -1,7 +1,7 @@
 import os, sys, time, uuid
 from collections import deque
 from datetime import datetime, timezone
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -30,6 +30,7 @@ NODES = {              # node positions in metres (x, y) on your test layout
 }
 # =============================================
 
+router = APIRouter(tags=["hardware"])
 app = FastAPI(title="Disha Hardware & Rescue Network API")
 
 app.add_middleware(
@@ -43,6 +44,8 @@ app.add_middleware(
 if HAS_MESH_BACKEND:
     app.include_router(simulation_router)
     app.include_router(bridge_router)
+
+app.include_router(router)
 
 obs = deque(maxlen=5000)
 sos = deque(maxlen=50)
@@ -60,7 +63,7 @@ def to_dist(rssi):
     return 10 ** ((RSSI_1M - rssi) / (10 * N))
 
 
-@app.post("/api/search-observation")
+@router.post("/api/search-observation")
 async def add(req: Request):
     if mode["want"] != "SNIFF":
         return {"ok": True, "ignored": True}
@@ -89,12 +92,12 @@ async def add(req: Request):
     return {"ok": True}
 
 
-@app.get("/api/mode")
+@router.get("/api/mode")
 def get_mode():
     return mode
 
 
-@app.post("/api/mode")
+@router.post("/api/mode")
 async def set_mode(req: Request):
     m = (await req.json()).get("mode")
     if m in ("NORMAL", "SNIFF"):
@@ -104,13 +107,13 @@ async def set_mode(req: Request):
     return mode
 
 
-@app.post("/api/mode-actual")
+@router.post("/api/mode-actual")
 async def mode_actual(req: Request):
     mode["actual"] = (await req.json()).get("mode", mode["actual"])
     return {"ok": True}
 
 
-@app.post("/api/sos")
+@router.post("/api/sos")
 async def add_sos(req: Request):
     if mode["want"] != "NORMAL":
         return {"ok": True, "ignored": True}
@@ -207,7 +210,7 @@ async def add_sos(req: Request):
     return {"ok": True}
 
 
-@app.get("/api/state")
+@router.get("/api/state")
 def state():
     if mode["want"] == "NORMAL":
         return {

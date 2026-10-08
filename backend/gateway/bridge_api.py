@@ -172,6 +172,13 @@ async def bridge_ingest(body: Dict[str, Any]):
             "event": "EMERGENCY_CREATED",
             "packet_id": packet_id,
             "source": node,
+            "code": cat,
+            "type": ptype,
+            "priority": priority,
+            "people": n,
+            "note": note,
+            "message": note,
+            "source_kind": "hardware",
             "timestamp": ts,
             "payload": {
                 "type": ptype,
@@ -196,6 +203,7 @@ async def bridge_ingest(body: Dict[str, Any]):
             "priority": priority,
             "people": n,
             "note": note,
+            "message": note,
             "source_kind": "hardware",
             "timestamp": ts,
         })

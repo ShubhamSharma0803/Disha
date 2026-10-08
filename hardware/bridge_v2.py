@@ -5,8 +5,19 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-# Usage:  python bridge_v2.py COM15
-PORT = sys.argv[1] if len(sys.argv) > 1 else "COM15"
+def find_default_port():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    if sys.platform.startswith("darwin"):
+        import glob
+        matches = glob.glob("/dev/cu.usb*") + glob.glob("/dev/cu.wch*") + glob.glob("/dev/cu.SLAB*")
+        if matches:
+            return matches[0]
+    return "COM15"
+
+
+# Usage:  python bridge_v2.py [PORT]
+PORT = find_default_port()
 BASE = "http://localhost:8000"
 
 print(f"Bridge starting for {PORT} -> {BASE}")
@@ -16,9 +27,11 @@ last_poll = 0
 
 def post(path, data):
     try:
-        requests.post(BASE + path, json=data, timeout=2)
+        r = requests.post(BASE + path, json=data, timeout=2)
+        if r.status_code != 200:
+            print(f"[bridge] backend POST {path} returned HTTP {r.status_code}: {r.text}")
     except requests.RequestException as e:
-        print("backend not reachable:", e)
+        print("[bridge] backend not reachable:", e)
 
 
 while True:

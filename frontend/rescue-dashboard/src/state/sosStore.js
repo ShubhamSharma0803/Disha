@@ -187,18 +187,19 @@ subscribe('EMERGENCY_CREATED', (ev) => {
   const pid = ev.packet_id || ev.packetId;
   if (!pid) return;
 
-  const code = (ev.code || ev.type || 'MED').toUpperCase();
-  const priority = ev.priority ?? (SOS_CATEGORIES[code]?.priority || 4);
-  const source = normalizeNodeId(ev.source);
+  const rawCode = ev.code || ev.payload?.code || (ev.type !== 'EMERGENCY_CREATED' ? ev.type : null) || 'MED';
+  const code = rawCode.toUpperCase();
+  const priority = ev.priority ?? ev.payload?.priority ?? (SOS_CATEGORIES[code]?.priority || 4);
+  const source = normalizeNodeId(ev.source || ev.payload?.source || 'NODE-01');
 
   const item = {
     packetId: pid,
     source,
     code,
     priority,
-    people: ev.people ?? 1,
-    note: ev.note ?? ev.message ?? '',
-    sourceKind: ev.source_kind || 'dashboard',
+    people: ev.people ?? ev.payload?.people ?? 1,
+    note: ev.note ?? ev.message ?? ev.payload?.note ?? ev.payload?.message ?? '',
+    sourceKind: ev.source_kind || ev.payload?.source_kind || 'dashboard',
     status: 'IN_FLIGHT',
     route: [source],
     rerouted: false,
@@ -258,9 +259,20 @@ subscribe('PACKET_DELIVERED', (ev) => {
   item.route = finalRoute;
   item.hopCount = ev.hop_count ?? Math.max(0, finalRoute.length - 1);
   item.deliveredAt = Date.now();
-  if (ev.code) item.code = ev.code.toUpperCase();
-  if (ev.people !== undefined) item.people = ev.people;
-  if (ev.priority !== undefined) item.priority = ev.priority;
+  const deliveredCode = ev.code || ev.payload?.code;
+  if (deliveredCode) item.code = deliveredCode.toUpperCase();
+  if (ev.people !== undefined || ev.payload?.people !== undefined) {
+    item.people = ev.people ?? ev.payload?.people;
+  }
+  if (ev.priority !== undefined || ev.payload?.priority !== undefined) {
+    item.priority = ev.priority ?? ev.payload?.priority;
+  }
+  if (ev.note || ev.payload?.note) {
+    item.note = ev.note || ev.payload?.note;
+  }
+  if (ev.source_kind || ev.payload?.source_kind) {
+    item.sourceKind = ev.source_kind || ev.payload?.source_kind;
+  }
 
   sosMap.set(pid, { ...item });
   notifyListeners();
